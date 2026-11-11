@@ -104,7 +104,6 @@ object Advice {
         val now = if (isToday) hTemp.num(base + nowHour) else null
         val feelNow = if (isToday) hFeel.num(base + nowHour) else null
         val codeNow = if (isToday) hCode.int(base + nowHour) else code
-        val rainAhead = isToday && rainHours.any { it > nowHour }
         val peakHour = outHours.maxByOrNull { hFeel.num(base + it) ?: -999.0 } ?: from
         val feelEnd = hFeel.num(base + to) ?: feelMin
         val peak = hh(peakHour)
@@ -213,6 +212,7 @@ object Advice {
             else -> t("in the evening", "το βράδυ")
         }
         // Today: describe the sky right now, and only mention rain if it's still to come.
+        val rainAhead = isToday && rainHours.any { it > nowHour }
         val sky = describe(if (isToday) codeNow else code)
         val rainLater = if (isToday) rainAhead else rainWhen != null
         val headline = when (mood) {
