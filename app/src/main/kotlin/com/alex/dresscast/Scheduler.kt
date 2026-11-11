@@ -85,7 +85,8 @@ object Notifier {
         val whenWord = if (dayIndex == 0) t("today", "σήμερα") else t("tomorrow", "αύριο")
         val title = d.items.take(2).joinToString(" + ") { it.name } + " " + whenWord
         val start = hh(d.startHour)
-        val text = t("${f.t(d.feelStart)} at $start, ${f.t(d.feelMax)} at its warmest.", "${f.t(d.feelStart)} στις $start, έως ${f.t(d.feelMax)}.") +
+        val peak = hh(d.peakHour)
+        val text = t("${f.t(d.feelStart)} at $start, ${f.t(d.feelMax)} at $peak.", "${f.t(d.feelStart)} στις $start, ${f.t(d.feelMax)} στις $peak.") +
             (d.rainFrom?.let { t(" Rain from ${hh(it)} (${d.rainPct}%).", " Βροχή από τις ${hh(it)} (${d.rainPct}%).") } ?: "")
         val periods = d.periods.joinToString("  ·  ") { "${it.name} ${f.t(it.feel)}" }
         val wear = d.items.joinToString(", ") { it.name.lowercase(L.locale) }

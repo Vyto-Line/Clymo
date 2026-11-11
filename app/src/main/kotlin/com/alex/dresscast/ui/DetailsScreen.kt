@@ -113,8 +113,10 @@ fun DetailsScreen(s: AppState, pal: Pal, onBack: () -> Unit) {
                     Text(" / " + f.t(day.tMin), color = pal.scene.ink, fontSize = 20.sp, fontFamily = Fonts.display, modifier = Modifier.padding(bottom = 6.dp))
                 }
                 Text(day.headline, color = pal.scene.ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text(t("Feels like ${f.t(day.feelMin)}–${f.t(day.feelMax)} while you're out", "Αίσθηση ${f.t(day.feelMin)}–${f.t(day.feelMax)} όσο είσαι έξω"),
-                    color = pal.scene.ink, fontSize = 13.sp)
+                Text(
+                    t("Feels like ${f.t(day.feelStart)} at ${hh(day.startHour)}, ${f.t(day.feelMax)} at ${hh(day.peakHour)}, ${f.t(day.feelEnd)} by ${hh(day.endHour)}",
+                        "Αίσθηση ${f.t(day.feelStart)} στις ${hh(day.startHour)}, ${f.t(day.feelMax)} στις ${hh(day.peakHour)}, ${f.t(day.feelEnd)} στις ${hh(day.endHour)}"),
+                    color = pal.scene.ink, fontSize = 13.sp, lineHeight = 17.sp)
             }
         }
 

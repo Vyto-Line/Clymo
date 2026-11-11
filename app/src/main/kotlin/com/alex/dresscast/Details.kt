@@ -107,7 +107,7 @@ object DetailsBuilder {
                         "Είναι ${f.t(tempStart)} στις $start, αλλά ο αέρας των ${day.wind.roundToInt()} km/h το κάνει να μοιάζει με ${f.t(day.feelStart)}.")
                 item.icon == Garment.Jacket ->
                     t("It feels like ${f.t(day.feelStart)} when you head out at $start.", "Θα μοιάζει με ${f.t(day.feelStart)} όταν βγεις στις $start.")
-                item.icon == Garment.Shirt && hasJacket && warmest != null ->
+                item.icon == Garment.Shirt && hasJacket && warmest != null && warmest.feel - day.feelStart >= 3 ->
                     t("It warms to ${f.t(warmest.feel)} by ${hh(warmest.hour)}, so you can take the jacket off.",
                         "Ζεσταίνει στους ${f.t(warmest.feel)} μέχρι τις ${hh(warmest.hour)}, οπότε μπορείς να βγάλεις το μπουφάν.")
                 item.icon == Garment.Umbrella && day.rainFrom != null ->
