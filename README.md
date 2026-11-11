@@ -70,9 +70,48 @@ To add one, long-press your home screen, choose **Widgets** and find **DressCast
 
 A **Today** tile (temperature, feels-like, what to wear, rain), a **Next plan** tile and a watch-face complication with today's main garment and the temperature. The watch app gets its data from the phone app.
 
-**Install it on the watch only.** Opening it on your phone replaces the phone app (if that happens, just install DressCast.apk again; your settings are kept).
+Works on Wear OS watches: Galaxy Watch 4 and newer, Pixel Watch and others.
 
-To install it, download **DressCast-Watch.apk** from the [latest release](https://github.com/Vyto-Line/DressCast/releases/latest) and install it on your watch with `adb install DressCast-Watch.apk` (turn on **Developer options → ADB debugging / Wireless debugging** on the watch first), or with an app like *Wear Installer*. Then long-press the watch face or swipe to the tiles to add them.
+> **Install it on the watch only.** Opening DressCast-Watch.apk on your phone replaces the phone app. If that happens, just install DressCast.apk again; your settings are kept.
+
+### Install on your watch (phone only, no computer)
+
+**1. Turn on developer options on the watch**
+- Open **Settings → About watch → Software information**.
+- Tap **Software version** about 5 times, until it says developer mode is on.
+
+**2. Turn on wireless debugging**
+- Back in **Settings**, open **Developer options** (now at the bottom).
+- Turn on **ADB debugging**, then **Wireless debugging**.
+- Make sure the watch and phone are on the **same Wi-Fi** (Bluetooth alone isn't enough).
+
+**3. Send the app from your phone**
+- On the phone, install **Wear Installer 2** from the Play Store.
+- On the watch, in **Developer options → Wireless debugging**, tap **Pair new device**. It shows an IP address, a port and a 6-digit code.
+- Enter them in Wear Installer 2 to pair, then connect with the IP and port shown on the main **Wireless debugging** screen (a different port from the pairing one).
+- Download **DressCast-Watch.apk** from the [latest release](https://github.com/Vyto-Line/DressCast/releases/latest) in your phone's browser. Choose **Download**, not open or install.
+- In Wear Installer 2, choose **Custom APK** and pick that file. It installs on the watch.
+
+**4. Set it up**
+- Open **DressCast on your phone** once, so the watch gets its first weather and outfit.
+- **Tiles:** swipe right from the watch face to the end, tap **+ Add tile** and pick **Today** and/or **Next plan**.
+- **Complication:** long-press the watch face, tap **Customize**, tap a complication slot and choose **DressCast**. Faces with several slots work best; not every face accepts every complication.
+
+When you're done, turn **Wireless debugging** off again on the watch, as it uses a little battery. Watch updates install the same way.
+
+<details>
+<summary>With a computer instead (ADB)</summary>
+
+Do steps 1 and 2 above, then on the computer (with [Android platform tools](https://developer.android.com/tools/releases/platform-tools) installed):
+
+```
+adb pair <watch IP>:<pairing port>      # enter the 6-digit code
+adb connect <watch IP>:<port>
+adb install DressCast-Watch.apk
+```
+</details>
+
+**Tiles still say "Open DressCast on your phone"?** Open the phone app again and pull down to refresh, and check the watch is connected in the Galaxy Wearable (or Pixel Watch) app.
 
 ## Install
 
