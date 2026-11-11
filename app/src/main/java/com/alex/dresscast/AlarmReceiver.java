@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-/** Fires at 08:00: fetch weather, notify, schedule tomorrow. */
+/** Fires at the chosen time: fetch weather, notify, schedule tomorrow. */
 public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -19,8 +19,9 @@ public class AlarmReceiver extends BroadcastReceiver {
                     try { r = Weather.fetchToday(ctx); }
                     catch (Exception e) { last = e; Thread.sleep(5000); }
                 }
-                if (r != null) Scheduler.notify(ctx, r.title, r.body);
+                if (r != null) Scheduler.notify(ctx, r.title, r.outfit, r.body);
                 else Scheduler.notify(ctx, "Weather unavailable",
+                        "Couldn't get today's forecast",
                         "Couldn't get today's forecast: " + (last != null ? last.getMessage() : ""));
             } catch (InterruptedException ignored) {
             } finally {
