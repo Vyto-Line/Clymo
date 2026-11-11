@@ -62,6 +62,9 @@ class Prefs(context: Context) {
     var rainAlert: Boolean by Pref("rainAlert", true)
     /** "System", "en" or "el". */
     var lang: String by Pref("lang", "System")
+    var lastUpdateCheck: String by Pref("lastUpdateCheck", "0")
+    /** The newest version we've already sent a notification about. */
+    var updateNotified: String by Pref("updateNotified", "")
 
     /** How many degrees to add to the real temperature before choosing clothes. */
     val shift: Double get() = comfort * 1.5 + learn

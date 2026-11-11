@@ -99,6 +99,13 @@ object Notifier {
         post(ctx, 3, title, text, text)
     }
 
+    fun update(ctx: Context, r: Release) = post(
+        ctx, 4,
+        t("DressCast ${r.version} is available", "Διαθέσιμο το DressCast ${r.version}"),
+        t("Open the app to update.", "Άνοιξε την εφαρμογή για ενημέρωση."),
+        t("Open the app and tap Update.", "Άνοιξε την εφαρμογή και πάτησε Ενημέρωση."),
+    )
+
     fun error(ctx: Context, message: String) = post(
         ctx, 1,
         t("Weather unavailable", "Ο καιρός δεν είναι διαθέσιμος"),

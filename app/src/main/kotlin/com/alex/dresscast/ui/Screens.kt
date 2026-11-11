@@ -41,6 +41,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -72,6 +73,7 @@ import com.alex.dresscast.L
 import com.alex.dresscast.L.t
 import com.alex.dresscast.Mood
 import com.alex.dresscast.Scheduler
+import com.alex.dresscast.Updater
 import com.alex.dresscast.hh
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -127,6 +129,8 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
                     Pill(issue.button, pal, primary = true) { open(ctx, issue) }
                 }
             }
+
+            if (s.update != null) UpdateCard(s, pal, compact = true)
 
             // Hero: drawn weather scene with today's summary on top. Tap for details.
             val press = remember { MutableInteractionSource() }
@@ -192,6 +196,35 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
                 Box(Modifier.enter(3)) { PeriodsCard(day, f, pal) }
                 Box(Modifier.enter(4)) { Feedback(s, pal) }
             }
+        }
+    }
+}
+
+/** "A new version is available" with an Update button and download progress. */
+@Composable
+private fun UpdateCard(s: AppState, pal: Pal, compact: Boolean) {
+    val r = s.update ?: return
+    val ctx = LocalContext.current
+    Card(pal, Modifier.border(2.dp, pal.accent, RoundedCornerShape(20.dp))) {
+        Text(t("Update available: DressCast ${r.version}", "Νέα έκδοση: DressCast ${r.version}"), color = pal.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+        Text(t("You have ${Updater.currentName(ctx)}.", "Έχεις την ${Updater.currentName(ctx)}."), color = pal.cardMuted, fontSize = 13.sp)
+        val notes = r.notes.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.contains("DressCast.apk") }
+        if (!compact && notes.isNotEmpty()) {
+            Text(notes.joinToString("\n"), color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
+        }
+        val progress = s.updateProgress
+        if (progress != null) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                color = pal.accent,
+                trackColor = pal.track,
+            )
+            Text(t("Downloading… ${(progress * 100).roundToInt()}%", "Λήψη… ${(progress * 100).roundToInt()}%"), color = pal.cardMuted, fontSize = 13.sp,
+                modifier = Modifier.padding(top = 6.dp))
+        } else {
+            s.updateStatus?.let { Text(it, color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp)) }
+            Pill(t("Update", "Ενημέρωση"), pal, Modifier.padding(top = 10.dp), primary = true) { s.installUpdate(ctx) }
         }
     }
 }
@@ -486,6 +519,14 @@ fun SettingsScreen(s: AppState, pal: Pal) {
             Spacer(Modifier.height(14.dp))
             Text(t("Language", "Γλώσσα"), color = pal.ink, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
             Segmented(listOf("System" to t("System", "Σύστημα"), "en" to "English", "el" to "Ελληνικά"), p.lang, pal) { s.setLanguage(it) }
+        }
+
+        Label(t("About", "Σχετικά"), pal.muted)
+        if (s.update != null) UpdateCard(s, pal, compact = false)
+        else Card(pal) {
+            SettingRow("DressCast " + Updater.currentName(ctx), s.updateStatus, pal) {
+                Pill(t("Check for updates", "Έλεγχος ενημερώσεων"), pal) { s.checkUpdate(byUser = true) }
+            }
         }
 
         Text(t("Weather data by Open-Meteo.com", "Δεδομένα καιρού: Open-Meteo.com"), color = pal.muted, fontSize = 12.sp,

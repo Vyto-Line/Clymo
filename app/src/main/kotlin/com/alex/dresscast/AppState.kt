@@ -31,6 +31,11 @@ class AppState(val ctx: Context) {
     /** Bumped when the language changes so every screen redraws. */
     var langVersion by mutableIntStateOf(0)
 
+    // ---- Updates
+    var update by mutableStateOf<Release?>(null)
+    var updateStatus by mutableStateOf<String?>(null)
+    var updateProgress by mutableStateOf<Float?>(null)
+
     private val scope = MainScope()
     private var lastJson: JSONObject? = null
 
@@ -45,11 +50,52 @@ class AppState(val ctx: Context) {
         }
     }
 
+    /** Looks for a newer version: always when asked, otherwise at most every 6 hours. */
+    fun checkUpdate(byUser: Boolean = false) {
+        val last = prefs.lastUpdateCheck.toLongOrNull() ?: 0L
+        if (!byUser && System.currentTimeMillis() - last < 6 * 3_600_000L) return
+        if (byUser) updateStatus = t("Checking…", "Έλεγχος…")
+        scope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching { Updater.newer(ctx) } }
+            prefs.lastUpdateCheck = System.currentTimeMillis().toString()
+            r.onSuccess {
+                update = it
+                if (byUser) updateStatus = if (it == null) t("You have the latest version.", "Έχεις την τελευταία έκδοση.") else null
+            }.onFailure {
+                if (byUser) updateStatus = t("Couldn't check for updates. Are you online?", "Δεν έγινε έλεγχος. Είσαι συνδεδεμένος;")
+            }
+        }
+    }
+
+    /** Downloads the new version and opens Android's install screen. [activity] must be an Activity. */
+    fun installUpdate(activity: Context) {
+        val r = update ?: return
+        if (updateProgress != null) return
+        if (!Updater.canInstall(ctx)) {
+            updateStatus = t("Allow DressCast to install updates, then tap Update again.", "Επίτρεψε στο DressCast να εγκαθιστά ενημερώσεις και πάτησε ξανά Ενημέρωση.")
+            runCatching { activity.startActivity(Updater.allowInstallIntent(ctx)) }
+            return
+        }
+        updateStatus = null
+        updateProgress = 0f
+        scope.launch {
+            try {
+                val file = withContext(Dispatchers.IO) { Updater.download(ctx, r) { updateProgress = it } }
+                Updater.install(activity, file)
+            } catch (e: Exception) {
+                updateStatus = t("Download failed. Try again.", "Η λήψη απέτυχε. Δοκίμασε ξανά.")
+            } finally {
+                updateProgress = null
+            }
+        }
+    }
+
     fun refresh(byUser: Boolean = false) {
         if (loading) return
         loading = true
         pulling = byUser
         issues = Reliability.issues(ctx)
+        checkUpdate()
         scope.launch {
             try {
                 val json = withContext(Dispatchers.IO) { Repo.fetchJson(ctx, prefs) }

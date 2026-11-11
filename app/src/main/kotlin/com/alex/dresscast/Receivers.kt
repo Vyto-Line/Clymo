@@ -40,6 +40,15 @@ class AlarmReceiver : BroadcastReceiver() {
                     Scheduler.scheduleRain(ctx, result)
                     Widget.updateAll(ctx, result)
                 }
+                // Once a morning, mention a new version (only once per version).
+                if (action == null || action == Scheduler.ACTION_MORNING) {
+                    runCatching { Updater.newer(ctx) }.getOrNull()?.let { r ->
+                        if (p.updateNotified != r.version) {
+                            Notifier.update(ctx, r)
+                            p.updateNotified = r.version
+                        }
+                    }
+                }
             } catch (_: InterruptedException) {
             } finally {
                 pending.finish()
