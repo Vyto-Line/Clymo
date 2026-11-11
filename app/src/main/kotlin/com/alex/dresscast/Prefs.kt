@@ -9,8 +9,17 @@ import kotlin.reflect.KProperty
 class Prefs(context: Context) {
     private val sp = context.applicationContext.getSharedPreferences("dresscast", Context.MODE_PRIVATE)
 
+    private val all = mutableListOf<Pref<*>>()
+
+    /** Re-read everything from disk, e.g. after a widget changed something while the app was closed. */
+    fun reload() = all.forEach { it.reload() }
+
     private inner class Pref<T>(private val key: String, private val def: T) : ReadWriteProperty<Any?, T> {
         private val state = mutableStateOf(read())
+
+        init { all.add(this) }
+
+        fun reload() { state.value = read() }
 
         @Suppress("UNCHECKED_CAST")
         private fun read(): T = when (def) {

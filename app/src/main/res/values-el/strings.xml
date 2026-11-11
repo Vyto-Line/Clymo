@@ -1,3 +1,5 @@
 <resources>
-    <string name="widget_desc">Ο καιρός σήμερα και τι να φορέσεις</string>
+    <string name="widget_desc">Ο καιρός σήμερα και τι να φορέσεις. Άλλαξέ του μέγεθος από μικρό τετράγωνο σε μεγάλο πάνελ.</string>
+    <string name="widget_check_desc">Το σημερινό ντύσιμο ως λίστα για τσεκάρισμα</string>
+    <string name="widget_week_desc">Οι επόμενες πέντε μέρες και τι να φορέσεις</string>
 </resources>

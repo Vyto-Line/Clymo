@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        state.prefs.reload()
         L.use(state.prefs)
         state.refresh()
     }

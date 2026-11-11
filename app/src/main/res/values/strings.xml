@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">DressCast</string>
-    <string name="widget_desc">Today\'s weather and what to wear</string>
+    <string name="widget_desc">Today\'s weather and what to wear. Resize it from a single tile to a big panel.</string>
+    <string name="widget_check_desc">Today\'s outfit as a checklist you can tick off</string>
+    <string name="widget_week_desc">The next five days and what to wear</string>
 </resources>

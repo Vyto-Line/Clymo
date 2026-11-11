@@ -180,17 +180,12 @@ class AppState(val ctx: Context) {
         }
     }
 
-    // ---- Ticked-off outfit items, remembered for today only.
-    fun checked(): Set<Int> =
-        if (prefs.checkedDay == LocalDate.now().toString())
-            prefs.checked.split(',').mapNotNull { it.toIntOrNull() }.toSet()
-        else emptySet()
+    // ---- Ticked-off outfit items, remembered for today only (shared with the checklist widget).
+    fun checked(): Set<Int> = Checks.get(prefs)
 
     fun toggle(i: Int) {
-        val now = checked().toMutableSet()
-        if (!now.add(i)) now.remove(i)
-        prefs.checkedDay = LocalDate.now().toString()
-        prefs.checked = now.joinToString(",")
+        Checks.toggle(prefs, i)
+        Widget.updateAll(ctx, forecast)
     }
 
     // ---- "How was today's outfit?"
