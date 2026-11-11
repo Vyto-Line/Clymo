@@ -35,6 +35,7 @@ At the time you choose, it sends a notification like **"Light jacket + umbrella 
 - Tell it whether you usually feel colder or warmer than other people
 - Answer "too cold / just right / too warm" and it adjusts over time
 - Set the hours you're usually outside, so evening rain only counts if you're still out
+- Turn off accessories you can't or don't want to wear (like sunglasses or an umbrella), and it suggests an alternative
 
 **Built to be dependable**
 - Works offline with the last forecast
