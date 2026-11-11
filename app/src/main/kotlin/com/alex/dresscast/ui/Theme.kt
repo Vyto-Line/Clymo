@@ -111,6 +111,10 @@ object Ico {
     val calendar = make("calendar", "M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z", "M3 10h18M8 3v4M16 3v4")
     val sliders = make("sliders", "M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12", circle(16f, 6f, 2f), circle(10f, 12f, 2f), circle(18f, 18f, 2f))
     val check = make("check", "M5 12.5l4.5 4.5L19 7", width = 3.5f)
+    val back = make("back", "M15 5l-7 7 7 7")
+    val up = make("up", "M12 19V5M6 11l6-6 6 6")
+    val down = make("down", "M12 5v14M6 13l6 6 6-6")
+    val chevron = make("chevron", "M9 5l7 7-7 7", width = 2.5f)
     val bell = make("bell", "M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z", "M10 20a2 2 0 0 0 4 0")
 
     fun garment(g: Garment) = when (g) {

@@ -1,6 +1,20 @@
 package com.alex.dresscast.ui
 
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,6 +45,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -91,7 +107,7 @@ private fun open(ctx: Context, issue: Issue) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayScreen(s: AppState, pal: Pal) {
+fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
     val ctx = LocalContext.current
     val fc = s.forecast
     val day = fc?.days?.firstOrNull()
@@ -112,18 +128,38 @@ fun TodayScreen(s: AppState, pal: Pal) {
                 }
             }
 
-            // Hero: drawn weather scene with today's summary on top.
+            // Hero: drawn weather scene with today's summary on top. Tap for details.
+            val press = remember { MutableInteractionSource() }
+            val pressed by press.collectIsPressedAsState()
+            val heroScale by animateFloatAsState(if (pressed) 0.97f else 1f, spring(stiffness = Spring.StiffnessMediumLow), label = "hero")
             Box(
                 Modifier
+                    .enter(0)
+                    .graphicsLayer { scaleX = heroScale; scaleY = heroScale }
                     .fillMaxWidth()
                     .height(210.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(pal.scene.sky)
+                    .clickable(interactionSource = press, indication = null, enabled = day != null, role = Role.Button,
+                        onClickLabel = t("Show details", "Λεπτομέρειες"), onClick = onOpenDetails)
             ) {
-                WeatherScene(day?.mood ?: Mood.Mild, pal.scene, Modifier.fillMaxSize())
+                WeatherScene(day?.mood ?: Mood.Mild, pal.scene, Modifier.fillMaxSize(), storm = (day?.code ?: 0) >= 95)
+                if (day != null) {
+                    Row(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.8f))
+                            .padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(t("Details", "Λεπτομέρειες"), color = Color(0xFF14181F), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Icon(Ico.chevron, null, Modifier.size(14.dp), tint = Color(0xFF14181F))
+                    }
+                }
                 Column(Modifier.padding(start = 18.dp, top = 12.dp, end = 96.dp)) {
-                    Text(day?.let { f.t(it.tMax) } ?: "–", color = pal.scene.ink, fontSize = 60.sp, fontWeight = FontWeight.Bold,
-                        fontFamily = Fonts.display, letterSpacing = (-2).sp, lineHeight = 64.sp)
+                    CountUp(day?.tMax, f, pal.scene.ink)
                     Text(
                         day?.headline ?: if (s.error != null) t("Couldn't load the weather", "Δεν φόρτωσε ο καιρός") else t("Loading…", "Φόρτωση…"),
                         color = pal.scene.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 26.sp,
@@ -145,19 +181,32 @@ fun TodayScreen(s: AppState, pal: Pal) {
                     Text(t("${checked.count { it < day.items.size }} of ${day.items.size} ready", "${checked.count { it < day.items.size }} από ${day.items.size} έτοιμα"),
                         color = pal.muted, fontSize = 13.sp)
                 }
-                day.items.withIndex().chunked(2).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                day.items.withIndex().chunked(2).forEachIndexed { r, row ->
+                    Row(Modifier.enter(1 + r), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         row.forEach { (i, item) ->
                             OutfitCard(item, i in checked, pal, Modifier.weight(1f)) { s.toggle(i) }
                         }
                         if (row.size == 1) Spacer(Modifier.weight(1f))
                     }
                 }
-                PeriodsCard(day, f, pal)
-                Feedback(s, pal)
+                Box(Modifier.enter(3)) { PeriodsCard(day, f, pal) }
+                Box(Modifier.enter(4)) { Feedback(s, pal) }
             }
         }
     }
+}
+
+/** The big temperature, counting up to its value when it appears or changes. */
+@Composable
+private fun CountUp(value: Double?, f: Fmt, color: Color) {
+    if (value == null) {
+        Text("–", color = color, fontSize = 60.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 64.sp)
+        return
+    }
+    val anim = remember { Animatable((value - 8).toFloat()) }
+    LaunchedEffect(value) { anim.animateTo(value.toFloat(), tween(1100, easing = FastOutSlowInEasing)) }
+    Text(f.t(anim.value.toDouble()), color = color, fontSize = 60.sp, fontWeight = FontWeight.Bold,
+        fontFamily = Fonts.display, letterSpacing = (-2).sp, lineHeight = 64.sp)
 }
 
 @Composable
@@ -187,11 +236,22 @@ private fun Feedback(s: AppState, pal: Pal) {
 
 @Composable
 private fun OutfitCard(item: Item, checked: Boolean, pal: Pal, modifier: Modifier, onToggle: () -> Unit) {
+    // A little squeeze-and-bounce when ticked, and the ring and tick fade in.
+    val bounce = remember { Animatable(1f) }
+    var first by remember { mutableStateOf(true) }
+    LaunchedEffect(checked) {
+        if (first) { first = false; return@LaunchedEffect }
+        bounce.animateTo(0.93f, tween(90))
+        bounce.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = Spring.StiffnessMedium))
+    }
+    val ring by animateColorAsState(if (checked) pal.accent else pal.card, tween(250), label = "ring")
+    val fill by animateColorAsState(if (checked) pal.accent else Color.Transparent, tween(250), label = "fill")
     Column(
         modifier
+            .graphicsLayer { scaleX = bounce.value; scaleY = bounce.value }
             .clip(RoundedCornerShape(20.dp))
             .background(pal.card)
-            .border(2.dp, if (checked) pal.accent else pal.card, RoundedCornerShape(20.dp))
+            .border(2.dp, ring, RoundedCornerShape(20.dp))
             .toggleable(value = checked, role = Role.Checkbox) { onToggle() }
             .padding(start = 14.dp, top = 12.dp, end = 12.dp, bottom = 14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -205,11 +265,13 @@ private fun OutfitCard(item: Item, checked: Boolean, pal: Pal, modifier: Modifie
                 Modifier
                     .size(24.dp)
                     .clip(CircleShape)
-                    .background(if (checked) pal.accent else Color.Transparent)
+                    .background(fill)
                     .border(2.dp, if (checked) pal.accent else pal.cardMuted, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                if (checked) Icon(Ico.check, null, Modifier.size(14.dp), tint = pal.onAccent)
+                AnimatedVisibility(checked, enter = scaleIn(spring(dampingRatio = 0.4f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
+                    Icon(Ico.check, null, Modifier.size(14.dp), tint = pal.onAccent)
+                }
             }
         }
         Text(item.name, color = pal.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
@@ -255,7 +317,9 @@ fun WeekScreen(s: AppState, pal: Pal) {
             }
             val lo = fc.days.minOf { it.tMin } - 1
             val hi = fc.days.maxOf { it.tMax } + 1
-            Card(pal, padding = 0) {
+            val grow = remember(fc) { Animatable(0f) }
+            LaunchedEffect(fc) { grow.animateTo(1f, tween(900, delayMillis = 150, easing = FastOutSlowInEasing)) }
+            Card(pal, Modifier.enter(0), padding = 0) {
                 fc.days.forEachIndexed { i, d ->
                     val name = when (i) {
                         0 -> t("Today", "Σήμερα")
@@ -274,7 +338,7 @@ fun WeekScreen(s: AppState, pal: Pal) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             BoxWithConstraints(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(pal.track)) {
                                 val start = ((d.tMin - lo) / (hi - lo)).toFloat()
-                                val width = ((d.tMax - d.tMin) / (hi - lo)).toFloat().coerceAtLeast(0.04f)
+                                val width = ((d.tMax - d.tMin) / (hi - lo)).toFloat().coerceAtLeast(0.04f) * grow.value
                                 Box(
                                     Modifier
                                         .offset(x = maxWidth * start)

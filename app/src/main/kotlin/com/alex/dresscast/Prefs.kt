@@ -54,6 +54,8 @@ class Prefs(context: Context) {
     /** Learned from "too cold / too warm" answers, in °C. Negative = you feel colder. */
     var learn: Float by Pref("learn", 0f)
     var feedbackDay: String by Pref("feedbackDay", "")
+    /** The last answer: -1 too cold, 0 just right, 1 too warm. */
+    var feedbackLast: Int by Pref("feedbackLast", 0)
     /** The hours you're usually outside; advice only looks at these. */
     var outFrom: Int by Pref("outFrom", 7)
     var outTo: Int by Pref("outTo", 22)

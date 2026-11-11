@@ -17,6 +17,9 @@ import java.time.LocalDate
 class AppState(val ctx: Context) {
     val prefs = Prefs(ctx)
     var forecast by mutableStateOf<Forecast?>(null)
+    var details by mutableStateOf<Details?>(null)
+    /** When the forecast on screen was downloaded. */
+    var fetchedAt by mutableStateOf<Long?>(null)
     var error by mutableStateOf<String?>(null)
     /** Showing a saved forecast because the download failed; holds when it was saved. */
     var offlineSince by mutableStateOf<Long?>(null)
@@ -36,7 +39,9 @@ class AppState(val ctx: Context) {
         // Show the saved forecast straight away, then refresh.
         Repo.cached(ctx)?.let { c ->
             lastJson = c.json
+            fetchedAt = c.fetchedAt
             forecast = runCatching { Advice.build(c.json, prefs) }.getOrNull()
+            details = forecast?.days?.firstOrNull()?.let { DetailsBuilder.build(c.json, prefs, it) }
         }
     }
 
@@ -49,6 +54,7 @@ class AppState(val ctx: Context) {
             try {
                 val json = withContext(Dispatchers.IO) { Repo.fetchJson(ctx, prefs) }
                 lastJson = json
+                fetchedAt = System.currentTimeMillis()
                 offlineSince = null
                 error = null
                 rebuild()
@@ -56,6 +62,7 @@ class AppState(val ctx: Context) {
                 val cached = withContext(Dispatchers.IO) { Repo.cached(ctx) }
                 if (cached != null) {
                     lastJson = cached.json
+                    fetchedAt = cached.fetchedAt
                     offlineSince = cached.fetchedAt
                     rebuild()
                 } else {
@@ -74,6 +81,7 @@ class AppState(val ctx: Context) {
         L.use(prefs)
         val fc = runCatching { Advice.build(json, prefs) }.onFailure { error = it.message }.getOrNull() ?: return
         forecast = fc
+        details = fc.days.firstOrNull()?.let { DetailsBuilder.build(json, prefs, it) }
         Scheduler.scheduleRain(ctx, fc)
         Widget.updateAll(ctx, fc)
     }
@@ -146,6 +154,7 @@ class AppState(val ctx: Context) {
     fun feedback(answer: Int) {
         prefs.learn = (prefs.learn + answer * 0.75f).coerceIn(-3f, 3f)
         prefs.feedbackDay = LocalDate.now().toString()
+        prefs.feedbackLast = answer
         if (answer != 0) rebuild()
     }
 

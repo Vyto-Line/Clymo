@@ -22,14 +22,21 @@ object Repo {
         val url = String.format(
             Locale.US,
             "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f" +
-                "&hourly=apparent_temperature,precipitation_probability,weather_code" +
+                "&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,relative_humidity_2m" +
                 "&daily=weather_code,temperature_2m_max,temperature_2m_min," +
                 "apparent_temperature_max,apparent_temperature_min," +
-                "precipitation_sum,wind_speed_10m_max,uv_index_max" +
-                "&timezone=auto&forecast_days=7",
+                "precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant," +
+                "uv_index_max,sunrise,sunset" +
+                "&timezone=auto&forecast_days=7&past_days=1",
             p.lat, p.lon,
         )
         val json = JSONObject(get(url))
+        // Air quality comes from Open-Meteo's companion service; skip it quietly if it fails.
+        runCatching {
+            val aq = JSONObject(get(String.format(Locale.US,
+                "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f&current=european_aqi", p.lat, p.lon)))
+            json.put("aqi", aq.getJSONObject("current").getInt("european_aqi"))
+        }
         runCatching {
             cacheFile(ctx).writeText(JSONObject().put("fetchedAt", System.currentTimeMillis()).put("data", json).toString())
         }

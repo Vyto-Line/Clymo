@@ -9,6 +9,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -24,10 +34,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.alex.dresscast.ui.BottomBar
+import com.alex.dresscast.ui.DetailsScreen
 import com.alex.dresscast.ui.SettingsScreen
 import com.alex.dresscast.ui.SetupScreen
 import com.alex.dresscast.ui.TodayScreen
@@ -66,7 +78,7 @@ fun App(s: AppState, activity: ComponentActivity) {
         else -> isSystemInDarkTheme()
     }
     val mood = s.forecast?.days?.firstOrNull()?.mood ?: Mood.Mild
-    val pal = palette(mood, dark)
+    val pal = com.alex.dresscast.ui.animated(palette(mood, dark))
 
     LaunchedEffect(dark) {
         val style = if (dark) SystemBarStyle.dark(AColor.TRANSPARENT)
@@ -78,6 +90,8 @@ fun App(s: AppState, activity: ComponentActivity) {
     else lightColorScheme(primary = pal.accent, onPrimary = pal.onAccent, surface = pal.card)
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var showDetails by rememberSaveable { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = showDetails) { showDetails = false }
     MaterialTheme(colorScheme = scheme) {
       androidx.compose.runtime.CompositionLocalProvider(
           androidx.compose.material3.LocalTextStyle provides androidx.compose.ui.text.TextStyle(fontFamily = com.alex.dresscast.ui.Fonts.body),
@@ -92,15 +106,39 @@ fun App(s: AppState, activity: ComponentActivity) {
             if (!p.onboarded) {
                 SetupScreen(s, pal)
             } else {
-                Column(Modifier.fillMaxSize()) {
-                    Box(Modifier.weight(1f)) {
-                        when (tab) {
-                            0 -> TodayScreen(s, pal)
-                            1 -> WeekScreen(s, pal)
-                            else -> SettingsScreen(s, pal)
+                // The details screen rises over the tabs; tabs slide sideways when switched.
+                AnimatedContent(
+                    targetState = showDetails,
+                    transitionSpec = {
+                        if (targetState) (slideInVertically(tween(380)) { it / 6 } + fadeIn(tween(300)) + scaleIn(tween(380), initialScale = 0.96f))
+                            .togetherWith(fadeOut(tween(200)))
+                        else fadeIn(tween(250)).togetherWith(slideOutVertically(tween(300)) { it / 6 } + fadeOut(tween(250)))
+                    },
+                    label = "details",
+                ) { details ->
+                    if (details) {
+                        DetailsScreen(s, pal) { showDetails = false }
+                    } else {
+                        Column(Modifier.fillMaxSize()) {
+                            AnimatedContent(
+                                targetState = tab,
+                                modifier = Modifier.weight(1f),
+                                transitionSpec = {
+                                    val dir = if (targetState > initialState) 1 else -1
+                                    (slideInHorizontally(tween(320)) { dir * it / 5 } + fadeIn(tween(320)))
+                                        .togetherWith(slideOutHorizontally(tween(260)) { -dir * it / 5 } + fadeOut(tween(200)))
+                                },
+                                label = "tabs",
+                            ) { current ->
+                                when (current) {
+                                    0 -> TodayScreen(s, pal) { showDetails = true }
+                                    1 -> WeekScreen(s, pal)
+                                    else -> SettingsScreen(s, pal)
+                                }
+                            }
+                            BottomBar(tab, pal) { tab = it }
                         }
                     }
-                    BottomBar(tab, pal) { tab = it }
                 }
             }
         }
