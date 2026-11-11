@@ -19,6 +19,8 @@ data class DayAdvice(
     val tMax: Double,
     val feelMin: Double,
     val feelMax: Double,
+    /** The real temperature right now (today only). */
+    val now: Double?,
     /** Feels-like temperature when you head out (your "from" hour). */
     val feelStart: Double,
     val startHour: Int,
@@ -61,9 +63,11 @@ object Advice {
         val from = minOf(outFrom, outTo).coerceIn(0, 23)
         val to = maxOf(outFrom, outTo).coerceIn(0, 23)
         val today = LocalDate.now()
+        val feels = Feels.hourly(h)
+        val temps = h.optJSONArray("temperature_2m") ?: JSONArray()
         val days = (0 until dates.length()).map { i ->
             day(i, LocalDate.parse(dates.getString(i)), d,
-                h.getJSONArray("apparent_temperature"),
+                feels, temps,
                 h.getJSONArray("precipitation_probability"),
                 h.getJSONArray("weather_code"),
                 shift, from, to, Fmt(fahrenheit), off)
@@ -76,7 +80,7 @@ object Advice {
 
     private fun day(
         i: Int, date: LocalDate, d: JSONObject,
-        hFeel: JSONArray, hRain: JSONArray, hCode: JSONArray,
+        hFeel: JSONArray, hTemp: JSONArray, hRain: JSONArray, hCode: JSONArray,
         shift: Double, from: Int, to: Int, f: Fmt, off: Set<String>,
     ): DayAdvice {
         fun dv(key: String, def: Double = 0.0) = d.getJSONArray(key).optDouble(i, def).let { if (it.isNaN()) def else it }
@@ -94,6 +98,7 @@ object Advice {
         val feelMin = feels.minOrNull() ?: dv("apparent_temperature_min", tMin)
         val feelMax = feels.maxOrNull() ?: dv("apparent_temperature_max", tMax)
         val feelStart = hFeel.num(base + from) ?: feelMin
+        val now = if (date == LocalDate.now()) hTemp.num(base + java.time.LocalTime.now().hour) else null
         val peakHour = outHours.maxByOrNull { hFeel.num(base + it) ?: -999.0 } ?: from
         val feelEnd = hFeel.num(base + to) ?: feelMin
         val peak = hh(peakHour)
@@ -210,7 +215,7 @@ object Advice {
         } + if (mood != Mood.Rainy && !snow && rainWhen != null) t(", rain ", ", βροχή ") + rainWhen else ""
 
         val sub = listOfNotNull(
-            t("${f.t(feelStart)} at $start", "${f.t(feelStart)} στις $start"),
+            t("Feels ${f.t(feelStart)} at $start", "Αίσθηση ${f.t(feelStart)} στις $start"),
             t("${f.t(feelMax)} at $peak", "${f.t(feelMax)} στις $peak"),
             rainFrom?.let { t("rain from ${hh(it)}", "βροχή από τις ${hh(it)}") },
             if (wind >= 30) t("windy", "αέρας") else null,
@@ -218,7 +223,7 @@ object Advice {
 
         val tag = if (mood == Mood.Rainy) t("Rain jacket", "Αδιάβροχο") else clothes.first().name
 
-        return DayAdvice(date, code, tMin, tMax, feelMin, feelMax, feelStart, from, peakHour, feelEnd, to, rainPct, rainFrom, rainHours,
+        return DayAdvice(date, code, tMin, tMax, feelMin, feelMax, now, feelStart, from, peakHour, feelEnd, to, rainPct, rainFrom, rainHours,
             wind, uv, periods, mood, headline, sub, items, tag)
     }
 

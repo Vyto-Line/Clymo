@@ -141,7 +141,7 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
                     .enter(0)
                     .graphicsLayer { scaleX = heroScale; scaleY = heroScale }
                     .fillMaxWidth()
-                    .height(210.dp)
+                    .height(222.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(pal.scene.sky)
                     .clickable(interactionSource = press, indication = null, enabled = day != null, role = Role.Button,
@@ -163,7 +163,11 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
                     }
                 }
                 Column(Modifier.padding(start = 18.dp, top = 12.dp, end = 96.dp)) {
-                    CountUp(day?.tMax, f, pal.scene.ink)
+                    CountUp(day?.let { it.now ?: it.tMax }, f, pal.scene.ink)
+                    if (day != null) Text(
+                        (if (day.now != null) t("Now · ", "Τώρα · ") else "") + t("High ${f.t(day.tMax)} · Low ${f.t(day.tMin)}", "Μέγ. ${f.t(day.tMax)} · Ελάχ. ${f.t(day.tMin)}"),
+                        color = pal.scene.ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp),
+                    )
                     Text(
                         day?.headline ?: if (s.error != null) t("Couldn't load the weather", "Δεν φόρτωσε ο καιρός") else t("Loading…", "Φόρτωση…"),
                         color = pal.scene.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 26.sp,

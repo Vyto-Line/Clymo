@@ -193,9 +193,9 @@ object Widget {
         val umbrella = d.items.firstOrNull { it.icon == Garment.Umbrella }
         val first = d.items.first()
 
-        v.text(R.id.w_temp, f.t(d.tMax), if (big) w.sceneInk else w.ink)
+        v.text(R.id.w_temp, f.t(d.now ?: d.tMax), if (big) w.sceneInk else w.ink)
         v.text(R.id.w_headline, d.headline, if (big) w.sceneInk else w.ink)
-        v.text(R.id.w_city, fc.city.substringBefore(",") + " · " + t("${f.t(d.feelStart)} at ${hh(d.startHour)}", "${f.t(d.feelStart)} στις ${hh(d.startHour)}"), w.muted)
+        v.text(R.id.w_city, fc.city.substringBefore(",") + " · " + t("High ${f.t(d.tMax)} at ${hh(d.peakHour)}", "Μέγ. ${f.t(d.tMax)} στις ${hh(d.peakHour)}"), w.muted)
         v.setImageViewResource(R.id.w_icon, weatherIcon(d.code))
         v.tint(R.id.w_icon, w.ink)
 

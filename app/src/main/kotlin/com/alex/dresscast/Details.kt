@@ -44,7 +44,7 @@ object DetailsBuilder {
         val i = (0 until dates.length()).firstOrNull { dates.getString(it) == today.date.toString() } ?: return null
         val base = i * 24
         val temp = h.optJSONArray("temperature_2m")
-        val feel = h.optJSONArray("apparent_temperature")
+        val feel = Feels.hourly(h)
         val rain = h.optJSONArray("precipitation_probability")
         val code = h.optJSONArray("weather_code")
         val hum = h.optJSONArray("relative_humidity_2m")
