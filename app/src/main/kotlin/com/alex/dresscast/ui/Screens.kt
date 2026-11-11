@@ -512,6 +512,43 @@ fun SettingsScreen(s: AppState, pal: Pal) {
             Segmented(listOf(false to "°C", true to "°F"), p.fahrenheit, pal) { p.fahrenheit = it; s.rebuild() }
         }
 
+        Label(t("Accessories", "Αξεσουάρ"), pal.muted)
+        Card(pal) {
+            Text(t("Suggest these when the weather calls for them. Turn off anything you can't or don't want to wear.",
+                "Πρότεινέ τα όταν το απαιτεί ο καιρός. Απενεργοποίησε ό,τι δεν μπορείς ή δεν θέλεις να φοράς."),
+                color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 4.dp))
+            val accessories = listOf(
+                Triple("glasses", Ico.glasses, t("Sunglasses", "Γυαλιά ηλίου")),
+                Triple("cap", Ico.sun, t("Caps and hats", "Καπέλα")),
+                Triple("umbrella", Ico.umbrella, t("Umbrella", "Ομπρέλα")),
+                Triple("scarf", Ico.scarf, t("Scarf and gloves", "Κασκόλ και γάντια")),
+                Triple("boots", Ico.shoe, t("Boots and waterproof shoes", "Μπότες και αδιάβροχα παπούτσια")),
+            )
+            val off = p.off
+            accessories.forEachIndexed { i, (key, icon, name) ->
+                if (i > 0) HorizontalDivider(Modifier.padding(vertical = 6.dp), color = pal.track)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(pal.tint), contentAlignment = Alignment.Center) {
+                        Icon(icon, null, Modifier.size(18.dp), tint = pal.accent)
+                    }
+                    Text(name, color = pal.ink, fontSize = 15.sp, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                    Switch(key !in off, { on ->
+                        p.noItems = (if (on) off - key else off + key).joinToString(",")
+                        s.rebuild()
+                    })
+                }
+            }
+            if ("glasses" in off || "umbrella" in off) {
+                Text(
+                    listOfNotNull(
+                        if ("glasses" in off) t("Without sunglasses, we'll suggest a cap on sunny days.", "Χωρίς γυαλιά ηλίου, θα προτείνουμε καπέλο τις ηλιόλουστες μέρες.") else null,
+                        if ("umbrella" in off) t("Without an umbrella, we'll suggest a hooded rain jacket.", "Χωρίς ομπρέλα, θα προτείνουμε αδιάβροχο με κουκούλα.") else null,
+                    ).joinToString(" "),
+                    color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        }
+
         Label(t("Appearance", "Εμφάνιση"), pal.muted)
         Card(pal) {
             Text(t("Theme", "Θέμα"), color = pal.ink, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))

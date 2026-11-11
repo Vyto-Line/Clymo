@@ -52,9 +52,9 @@ fun hh(h: Int) = "%02d:00".format(h)
 object Advice {
 
     fun build(json: JSONObject, p: Prefs): Forecast =
-        build(json, p.city, p.shift, p.outFrom, p.outTo, p.fahrenheit)
+        build(json, p.city, p.shift, p.outFrom, p.outTo, p.fahrenheit, p.off)
 
-    fun build(json: JSONObject, city: String, shift: Double, outFrom: Int, outTo: Int, fahrenheit: Boolean): Forecast {
+    fun build(json: JSONObject, city: String, shift: Double, outFrom: Int, outTo: Int, fahrenheit: Boolean, off: Set<String> = emptySet()): Forecast {
         val h = json.getJSONObject("hourly")
         val d = json.getJSONObject("daily")
         val dates = d.getJSONArray("time")
@@ -66,7 +66,7 @@ object Advice {
                 h.getJSONArray("apparent_temperature"),
                 h.getJSONArray("precipitation_probability"),
                 h.getJSONArray("weather_code"),
-                shift, from, to, Fmt(fahrenheit))
+                shift, from, to, Fmt(fahrenheit), off)
         }.filter { !it.date.isBefore(today) }   // an old saved forecast may start yesterday
         return Forecast(city, fahrenheit, days)
     }
@@ -77,7 +77,7 @@ object Advice {
     private fun day(
         i: Int, date: LocalDate, d: JSONObject,
         hFeel: JSONArray, hRain: JSONArray, hCode: JSONArray,
-        shift: Double, from: Int, to: Int, f: Fmt,
+        shift: Double, from: Int, to: Int, f: Fmt, off: Set<String>,
     ): DayAdvice {
         fun dv(key: String, def: Double = 0.0) = d.getJSONArray(key).optDouble(i, def).let { if (it.isNaN()) def else it }
         val code = d.getJSONArray("weather_code").optInt(i, 0)
@@ -124,7 +124,7 @@ object Advice {
             avg < 0 -> {
                 clothes += Item(t("Warm coat", "Ζεστό παλτό"), t("Feels ${f.t(feelStart)} at $start", "Αίσθηση ${f.t(feelStart)} στις $start"), Garment.Jacket)
                 clothes += Item(t("Sweater", "Πουλόβερ"), t("Stays under ${f.t(feelMax)}", "Μένει κάτω από ${f.t(feelMax)}"), Garment.Shirt)
-                clothes += Item(t("Scarf + gloves", "Κασκόλ + γάντια"), t("Freezing cold", "Παγωνιά"), Garment.Scarf)
+                if ("scarf" !in off) clothes += Item(t("Scarf + gloves", "Κασκόλ + γάντια"), t("Freezing cold", "Παγωνιά"), Garment.Scarf)
             }
             avg < 7 -> {
                 clothes += Item(t("Warm coat", "Ζεστό παλτό"), t("Feels ${f.t(feelStart)} at $start", "Αίσθηση ${f.t(feelStart)} στις $start"), Garment.Jacket)
@@ -156,23 +156,34 @@ object Advice {
         val extras = mutableListOf<Item>()
         val snow = isSnow(worst)
         val wetOut = outPeriods.count { it.rain >= 50 }
+        // Accessories respect what the user turned off in Settings, with a sensible alternative where there is one.
+        fun rainCover(why: String) =
+            if ("umbrella" !in off) Item(t("Umbrella", "Ομπρέλα"), why, Garment.Umbrella)
+            else Item(t("Hooded rain jacket", "Αδιάβροχο με κουκούλα"), why, Garment.Jacket)
         if (snow) {
-            extras += Item(t("Boots", "Μπότες"), t("Snow expected", "Αναμένεται χιόνι"), Garment.Shoe)
+            if ("boots" !in off) extras += Item(t("Boots", "Μπότες"), t("Snow expected", "Αναμένεται χιόνι"), Garment.Shoe)
         } else if (rainFrom != null) {
             if (outPeriods.isNotEmpty() && wetOut == outPeriods.size) {
-                extras += Item(t("Umbrella", "Ομπρέλα"), t("$rainPct% rain all day", "$rainPct% βροχή όλη μέρα"), Garment.Umbrella)
-                if (rainMm >= 3) extras += Item(t("Waterproof shoes", "Αδιάβροχα παπούτσια"), t("${rainMm.roundToInt()} mm of rain", "${rainMm.roundToInt()} mm βροχής"), Garment.Shoe)
+                extras += rainCover(t("$rainPct% rain all day", "$rainPct% βροχή όλη μέρα"))
+                if (rainMm >= 3 && "boots" !in off) extras += Item(t("Waterproof shoes", "Αδιάβροχα παπούτσια"), t("${rainMm.roundToInt()} mm of rain", "${rainMm.roundToInt()} mm βροχής"), Garment.Shoe)
             } else {
-                extras += Item(t("Umbrella", "Ομπρέλα"), t("$rainPct% rain from ${hh(rainFrom)}", "$rainPct% βροχή από τις ${hh(rainFrom)}"), Garment.Umbrella)
+                extras += rainCover(t("$rainPct% rain from ${hh(rainFrom)}", "$rainPct% βροχή από τις ${hh(rainFrom)}"))
             }
-        } else if (rainPct >= 30) {
+        } else if (rainPct >= 30 && "umbrella" !in off) {
             extras += Item(t("Small umbrella", "Μικρή ομπρέλα"), t("$rainPct% chance of rain", "$rainPct% πιθανότητα βροχής"), Garment.Umbrella)
         }
-        if (wind >= 35 && clothes.none { it.icon == Garment.Jacket }) {
+        if (wind >= 35 && clothes.none { it.icon == Garment.Jacket } && extras.none { it.icon == Garment.Jacket }) {
             extras += Item(t("Windproof layer", "Αντιανεμικό"), t("Wind ${wind.roundToInt()} km/h", "Άνεμος ${wind.roundToInt()} km/h"), Garment.Jacket)
         }
-        if (uv >= 6) extras += Item(t("Cap + sunscreen", "Καπέλο + αντηλιακό"), t("UV ${uv.roundToInt()} at midday", "UV ${uv.roundToInt()} το μεσημέρι"), Garment.Sun)
-        else if (uv >= 3 && avg >= 16) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), t("UV ${uv.roundToInt()} at midday", "UV ${uv.roundToInt()} το μεσημέρι"), Garment.Glasses)
+        val uvWhy = t("UV ${uv.roundToInt()} at midday", "UV ${uv.roundToInt()} το μεσημέρι")
+        if (uv >= 6) {
+            extras += if ("cap" !in off) Item(t("Cap + sunscreen", "Καπέλο + αντηλιακό"), uvWhy, Garment.Sun)
+            else Item(t("Sunscreen", "Αντηλιακό"), uvWhy, Garment.Sun)
+            if ("glasses" !in off && avg >= 16) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), uvWhy, Garment.Glasses)
+        } else if (uv >= 3 && avg >= 16) {
+            if ("glasses" !in off) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), uvWhy, Garment.Glasses)
+            else if ("cap" !in off) extras += Item(t("Cap", "Καπέλο"), t("Shades your eyes · UV ${uv.roundToInt()}", "Σκιάζει τα μάτια · UV ${uv.roundToInt()}"), Garment.Sun)
+        }
 
         val keep = (4 - extras.size).coerceAtLeast(2)
         val items = (clothes.take(keep) + extras).take(4)

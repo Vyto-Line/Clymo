@@ -102,6 +102,9 @@ object DetailsBuilder {
         val hasJacket = day.items.any { it.icon == Garment.Jacket }
         return day.items.map { item ->
             val text = when {
+                item.icon == Garment.Jacket && day.rainFrom != null && item.why.contains('%') ->
+                    t("${day.rainPct}% chance of rain from ${hh(day.rainFrom)}, while you're usually out. A hood keeps you dry without an umbrella.",
+                        "${day.rainPct}% πιθανότητα βροχής από τις ${hh(day.rainFrom)}, όσο είσαι έξω. Η κουκούλα σε κρατά στεγνό χωρίς ομπρέλα.")
                 item.icon == Garment.Jacket && tempStart != null && day.wind >= 15 && tempStart - day.feelStart >= 1 ->
                     t("It's ${f.t(tempStart)} at $start, but the ${day.wind.roundToInt()} km/h wind makes it feel like ${f.t(day.feelStart)}.",
                         "Είναι ${f.t(tempStart)} στις $start, αλλά ο αέρας των ${day.wind.roundToInt()} km/h το κάνει να μοιάζει με ${f.t(day.feelStart)}.")

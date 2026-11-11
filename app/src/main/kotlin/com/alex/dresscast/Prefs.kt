@@ -72,6 +72,9 @@ class Prefs(context: Context) {
     /** "System", "en" or "el". */
     var lang: String by Pref("lang", "System")
     var lastUpdateCheck: String by Pref("lastUpdateCheck", "0")
+    /** Accessories never to suggest, comma-separated: glasses, cap, umbrella, scarf, boots. */
+    var noItems: String by Pref("noItems", "")
+    val off: Set<String> get() = noItems.split(',').filter { it.isNotBlank() }.toSet()
     /** The newest version we've already sent a notification about. */
     var updateNotified: String by Pref("updateNotified", "")
 
