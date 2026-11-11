@@ -27,14 +27,15 @@ At the time you choose, it sends a notification like **"Light jacket + umbrella 
 **In the app**
 - Animated weather picture with the temperature and a one-line summary
 - Outfit cards you can tick off, plus morning, afternoon and evening at a glance
-- Tap the picture for **Today in detail**: an hour-by-hour chart, why each item was chosen, wind, UV, humidity, sunrise and sunset, rain and air quality, and a comparison with yesterday
+- Tap the picture for **Today in detail**: an hour-by-hour chart (tap any hour to see its weather), why each item was chosen, wind, UV, humidity, sunrise and sunset, rain and air quality, and a comparison with yesterday
 - **Week ahead** with what to wear each day
+- Automatic location or search for a city, with saved places
 - Light and dark mode, English and Greek, °C and °F
 
 **Advice that fits you**
 - Tell it whether you usually feel colder or warmer than other people
 - Answer "too cold / just right / too warm" and it adjusts over time
-- Set the hours you're usually outside, so evening rain only counts if you're still out
+- Set the hours you're usually outside (with different weekend hours if you like), so evening rain only counts if you're still out
 - Turn off accessories you can't or don't want to wear (like sunglasses or an umbrella), and it suggests an alternative
 
 **Built to be dependable**
