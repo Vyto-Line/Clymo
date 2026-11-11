@@ -22,6 +22,13 @@ jobs:
           curl -fsSL -o app/src/main/res/font/inter.ttf "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf"
           curl -fsSL -o app/src/main/res/font/space_grotesk.ttf "https://github.com/google/fonts/raw/main/ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf"
       - run: gradle assembleRelease
+      # Keep the APKs of every build, so test builds can be tried without a release.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apks
+          path: |
+            app/build/outputs/apk/release/*.apk
+            wear/build/outputs/apk/release/*.apk
       # Only commits whose message contains [release] publish a new version.
       - name: Publish release
         if: contains(github.event.head_commit.message, '[release]') || github.event_name == 'workflow_dispatch'
@@ -30,7 +37,8 @@ jobs:
         run: |
           VERSION="2.0.${{ github.run_number }}"
           cp app/build/outputs/apk/release/*.apk DressCast.apk
-          gh release create "v$VERSION" DressCast.apk \
+          cp wear/build/outputs/apk/release/*.apk DressCast-Watch.apk
+          gh release create "v$VERSION" DressCast.apk DressCast-Watch.apk \
             --title "DressCast $VERSION" \
-            --notes "Download **DressCast.apk** below and open it on your phone to install." \
+            --notes "Download **DressCast.apk** below and open it on your phone to install. **DressCast-Watch.apk** is the Wear OS app (tiles and a watch-face complication); install it on your watch." \
             --latest

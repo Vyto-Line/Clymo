@@ -78,6 +78,23 @@ class Prefs(context: Context) {
     /** "System", "en" or "el". */
     var lang: String by Pref("lang", "System")
     var lastUpdateCheck: String by Pref("lastUpdateCheck", "0")
+    // Plans and calendars
+    var plans: String by Pref("plans", "[]")
+    var calOn: Boolean by Pref("calOn", false)
+    /** Calendar ids switched off, comma-separated (all others are on). */
+    var calOff: String by Pref("calOff", "")
+    var calOnlyOut: Boolean by Pref("calOnlyOut", false)
+    // Weather warnings
+    var warnOn: Boolean by Pref("warnOn", true)
+    /** 1 = yellow and above, 2 = orange and above, 3 = red only. */
+    var warnLevel: Int by Pref("warnLevel", 1)
+    var warnNotified: String by Pref("warnNotified", "")
+    /** Cached region lookup: "lat,lon|EMMA ids|feed". */
+    var emma: String by Pref("emma", "")
+    // Pollen
+    var pollenOn: Boolean by Pref("pollenOn", true)
+    var pollenTypes: String by Pref("pollenTypes", "olive,grass")
+    var pollenNotifiedDay: String by Pref("pollenNotifiedDay", "")
     /** Accessories never to suggest, comma-separated: glasses, cap, umbrella, scarf, boots. */
     var noItems: String by Pref("noItems", "")
     val off: Set<String> get() = noItems.split(',').filter { it.isNotBlank() }.toSet()
@@ -88,8 +105,13 @@ class Prefs(context: Context) {
     fun hoursFor(date: java.time.LocalDate): Pair<Int, Int> {
         val wk = date.dayOfWeek == java.time.DayOfWeek.SATURDAY || date.dayOfWeek == java.time.DayOfWeek.SUNDAY
         val (a, b) = if (weekend && wk) wFrom to wTo else outFrom to outTo
-        val from = minOf(a, b).coerceIn(0, 23)
-        val to = (maxOf(a, b) - if (maxOf(a, b) >= 24) 1 else 0).coerceIn(from, 23)
+        var from = minOf(a, b).coerceIn(0, 23)
+        var to = (maxOf(a, b) - if (maxOf(a, b) >= 24) 1 else 0).coerceIn(from, 23)
+        // Your own plans outside stretch the day, e.g. a 21:00 dinner when you're usually home by 20:00.
+        PlanStore.load(this).filter { it.where != "in" && it.occursOn(date) }.forEach { pl ->
+            from = minOf(from, pl.startHour)
+            to = maxOf(to, pl.endHour.coerceAtMost(23))
+        }
         return from to to
     }
 

@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.alex.dresscast.wear'
+    compileSdk 35
+
+    defaultConfig {
+        // Same id and key as the phone app, so the two can talk over the Wearable Data Layer.
+        applicationId "com.alex.dresscast"
+        minSdk 30
+        targetSdk 34
+        versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1") as int)
+        versionName "2.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("../app/dresscast.keystore")
+            storePassword "UNokfQWVSKWTb91uZ34DWgLd"
+            keyAlias "dresscast"
+            keyPassword "UNokfQWVSKWTb91uZ34DWgLd"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.wear.tiles:tiles:1.4.1'
+    implementation 'androidx.wear.protolayout:protolayout:1.2.1'
+    implementation 'androidx.wear.protolayout:protolayout-expression:1.2.1'
+    implementation 'androidx.wear.watchface:watchface-complications-data-source-ktx:1.2.1'
+    implementation 'com.google.android.gms:play-services-wearable:18.2.0'
+    implementation 'com.google.guava:guava:33.3.1-android'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1'
+}

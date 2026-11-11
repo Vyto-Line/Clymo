@@ -31,6 +31,13 @@ class AppState(val ctx: Context) {
     /** Bumped when the language changes so every screen redraws. */
     var langVersion by mutableIntStateOf(0)
 
+    // ---- Plans, calendars, warnings, pollen
+    var warnings by mutableStateOf<List<Warning>>(emptyList())
+    var pollen by mutableStateOf<List<PollenDay>>(emptyList())
+    /** Today's plans and calendar events, with what the weather does during each. */
+    var plans by mutableStateOf<List<Pair<PlanItem, PlanTip?>>>(emptyList())
+    var calendars by mutableStateOf<List<PhoneCalendar>>(emptyList())
+
     // ---- Updates
     var update by mutableStateOf<Release?>(null)
     var updateStatus by mutableStateOf<String?>(null)
@@ -47,7 +54,45 @@ class AppState(val ctx: Context) {
             fetchedAt = c.fetchedAt
             forecast = runCatching { Advice.build(c.json, prefs) }.getOrNull()
             details = forecast?.days?.firstOrNull()?.let { DetailsBuilder.build(c.json, prefs, it) }
+            extras(c.json)
         }
+        warnings = Warnings.cached(ctx, prefs)
+    }
+
+    /** Plans, pollen and calendars from the saved forecast (no download). */
+    private fun extras(json: JSONObject) {
+        pollen = runCatching { Pollen.days(json, prefs) }.getOrDefault(emptyList())
+        calendars = Calendars.list(ctx)
+        val h = runCatching { Hourly(json) }.getOrNull()
+        plans = Calendars.itemsFor(ctx, prefs, LocalDate.now()).map { it to h?.let { hh -> PlanAdvice.of(it, hh, prefs) } }
+    }
+
+    /** Downloads the official warnings for your area. */
+    fun refreshWarnings() {
+        scope.launch {
+            val list = withContext(Dispatchers.IO) { runCatching { Warnings.fetch(ctx, prefs) }.getOrNull() }
+            if (list != null) {
+                warnings = list
+                withContext(Dispatchers.IO) { Notifier.warnings(ctx, Warnings.fresh(prefs, list)) }
+            } else warnings = Warnings.cached(ctx, prefs)
+        }
+    }
+
+    fun savePlan(plan: Plan) {
+        PlanStore.upsert(prefs, plan)
+        rebuild()
+    }
+
+    fun deletePlan(id: String) {
+        PlanStore.delete(prefs, id)
+        rebuild()
+    }
+
+    /** The weather and tip for a plan that's still being edited, for the preview in the sheet. */
+    fun preview(plan: Plan, date: LocalDate): PlanTip? {
+        val json = lastJson ?: return null
+        val item = PlanItem("preview", plan.title, date, plan.start, plan.end, plan.where, "", 0, plan)
+        return runCatching { PlanAdvice.of(item, Hourly(json), prefs) }.getOrNull()
     }
 
     /** Looks for a newer version: always when asked, otherwise at most every 6 hours. */
@@ -104,6 +149,7 @@ class AppState(val ctx: Context) {
                 offlineSince = null
                 error = null
                 rebuild()
+                refreshWarnings()
             } catch (e: Exception) {
                 val cached = withContext(Dispatchers.IO) { Repo.cached(ctx) }
                 if (cached != null) {
@@ -128,8 +174,11 @@ class AppState(val ctx: Context) {
         val fc = runCatching { Advice.build(json, prefs) }.onFailure { error = it.message }.getOrNull() ?: return
         forecast = fc
         details = fc.days.firstOrNull()?.let { DetailsBuilder.build(json, prefs, it) }
+        extras(json)
         Scheduler.scheduleRain(ctx, fc)
+        Scheduler.schedulePlans(ctx)
         Widget.updateAll(ctx, fc)
+        WatchSync.send(ctx, fc, json, prefs)
     }
 
     fun setLanguage(lang: String) {

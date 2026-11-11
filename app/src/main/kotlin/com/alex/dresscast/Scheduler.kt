@@ -20,6 +20,8 @@ object Scheduler {
     const val ACTION_MORNING = "com.alex.dresscast.MORNING"
     const val ACTION_EVENING = "com.alex.dresscast.EVENING"
     const val ACTION_RAIN = "com.alex.dresscast.RAIN"
+    const val ACTION_PLAN = "com.alex.dresscast.PLAN"
+    const val ACTION_WARN = "com.alex.dresscast.WARN"
 
     fun scheduleAll(ctx: Context) {
         val p = Prefs(ctx)
@@ -27,6 +29,26 @@ object Scheduler {
         schedule(ctx, ACTION_MORNING, 0, nextTime(p.hour, p.minute))
         if (p.evening) schedule(ctx, ACTION_EVENING, 1, nextTime(21, 0))
         else am.cancel(pending(ctx, ACTION_EVENING, 1))
+        // Warnings are checked every few hours; Android may batch these to save battery.
+        val warn = pending(ctx, ACTION_WARN, 6)
+        if (p.warnOn) am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR,
+            3 * AlarmManager.INTERVAL_HOUR, warn)
+        else am.cancel(warn)
+        schedulePlans(ctx)
+    }
+
+    /** A reminder 30 minutes before the next plan of yours that asks for one. */
+    fun schedulePlans(ctx: Context) {
+        val p = Prefs(ctx)
+        val am = ctx.getSystemService(AlarmManager::class.java)
+        val pi = pending(ctx, ACTION_PLAN, 5)
+        val now = System.currentTimeMillis()
+        val zone = ZoneId.systemDefault()
+        val next = PlanStore.load(p).filter { it.remind }.flatMap { pl ->
+            (0..7).map { LocalDate.now().plusDays(it.toLong()) }.filter { pl.occursOn(it) }
+                .map { d -> LocalDateTime.of(d, pl.start).minusMinutes(30).atZone(zone).toInstant().toEpochMilli() }
+        }.filter { it > now + 30_000 }.minOrNull()
+        if (next == null) am.cancel(pi) else schedule(ctx, ACTION_PLAN, 5, next)
     }
 
     /** After each new forecast: set a reminder one hour before the next rain while you're out. */
@@ -101,6 +123,29 @@ object Notifier {
         post(ctx, 3, title, text, text)
     }
 
+    /** New official warnings: one notification each. */
+    fun warnings(ctx: Context, list: List<Warning>) {
+        list.take(3).forEachIndexed { i, w ->
+            val day = when (w.onset.withZoneSameInstant(ZoneId.systemDefault()).toLocalDate()) {
+                LocalDate.now() -> if (w.active) t(" now", " τώρα") else t(" today", " για σήμερα")
+                LocalDate.now().plusDays(1) -> t(" for tomorrow", " για αύριο")
+                else -> ""
+            }
+            val title = t("${w.levelName} warning$day", "${w.levelName} προειδοποίηση$day")
+            val what = w.typeName.replaceFirstChar { it.uppercase(L.locale) }
+            val text = "$what" + (if (w.area.isNotBlank()) t(" in ${w.area}", " · ${w.area}") else "") + ", " + w.whenText.lowercase(L.locale) + ". " + w.tip + "."
+            post(ctx, 10 + i, title, text, text + if (w.description.isNotBlank()) "\n\n" + w.description else "", "warnings")
+        }
+    }
+
+    fun plan(ctx: Context, item: PlanItem, tip: PlanTip?) {
+        val title = t("In 30 min: ${item.title}", "Σε 30′: ${item.title}")
+        val text = if (tip == null) PlanAdvice.whereLabel(item.where) else "${tip.weather}. ${tip.tip}."
+        post(ctx, 5, title, text, text, "plans")
+    }
+
+    fun pollen(ctx: Context, title: String, text: String) = post(ctx, 6, title, text, text)
+
     fun update(ctx: Context, r: Release) = post(
         ctx, 4,
         t("DressCast ${r.version} is available", "Διαθέσιμο το DressCast ${r.version}"),
@@ -115,13 +160,15 @@ object Notifier {
         t("Couldn't get the forecast: ", "Δεν ήταν δυνατή η λήψη της πρόγνωσης: ") + message,
     )
 
-    private fun post(ctx: Context, id: Int, title: String, text: String, big: String) {
+    private fun post(ctx: Context, id: Int, title: String, text: String, big: String, channel: String = CHANNEL) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CHANNEL, t("Daily weather", "Καθημερινός καιρός"), NotificationManager.IMPORTANCE_HIGH))
+        nm.createNotificationChannel(NotificationChannel("warnings", t("Weather warnings", "Προειδοποιήσεις καιρού"), NotificationManager.IMPORTANCE_HIGH))
+        nm.createNotificationChannel(NotificationChannel("plans", t("Plan reminders", "Υπενθυμίσεις σχεδίων"), NotificationManager.IMPORTANCE_HIGH))
         val open = PendingIntent.getActivity(
             ctx, 1, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
-        val n = Notification.Builder(ctx, CHANNEL)
+        val n = Notification.Builder(ctx, channel)
             .setSmallIcon(R.drawable.ic_stat_sun)
             .setColor(0xFF3B7DDD.toInt())
             .setContentTitle(title)

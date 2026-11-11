@@ -35,8 +35,10 @@ object Updater {
             val o = JSONObject(con.inputStream.bufferedReader().use { it.readText() })
             val tag = o.getString("tag_name")
             val assets = o.getJSONArray("assets")
-            val apk = (0 until assets.length()).map { assets.getJSONObject(it) }
-                .firstOrNull { it.getString("name").endsWith(".apk") } ?: return null
+            // The phone app; releases also carry DressCast-Watch.apk for Wear OS.
+            val list = (0 until assets.length()).map { assets.getJSONObject(it) }
+            val apk = list.firstOrNull { it.getString("name") == "DressCast.apk" }
+                ?: list.firstOrNull { it.getString("name").endsWith(".apk") && !it.getString("name").contains("Watch", true) } ?: return null
             val number = tag.substringAfterLast('.').toIntOrNull() ?: return null
             return Release(tag.removePrefix("v"), number, apk.getString("browser_download_url"), o.optString("body", ""))
         } finally {

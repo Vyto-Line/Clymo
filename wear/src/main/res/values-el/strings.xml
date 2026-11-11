@@ -1,0 +1,5 @@
+<resources>
+    <string name="tile_today">Σήμερα</string>
+    <string name="tile_plan">Επόμενο σχέδιο</string>
+    <string name="complication">Ντύσιμο και θερμοκρασία</string>
+</resources>

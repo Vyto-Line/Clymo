@@ -37,6 +37,13 @@ object Repo {
                 "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f&current=european_aqi", p.lat, p.lon)))
             json.put("aqi", aq.getJSONObject("current").getInt("european_aqi"))
         }
+        // Pollen (Europe only, Copernicus via Open-Meteo): hourly grains/m³ for today and tomorrow.
+        if (p.pollenOn) runCatching {
+            val aq = JSONObject(get(String.format(Locale.US,
+                "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f" +
+                    "&hourly=${Pollen.TYPES.joinToString(",") { it + "_pollen" }}&forecast_days=2&timezone=auto", p.lat, p.lon)))
+            json.put("pollen", aq.getJSONObject("hourly"))
+        }
         runCatching {
             cacheFile(ctx).writeText(JSONObject().put("fetchedAt", System.currentTimeMillis()).put("data", json).toString())
         }

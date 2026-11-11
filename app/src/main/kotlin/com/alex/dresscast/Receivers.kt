@@ -11,7 +11,20 @@ class AlarmReceiver : BroadcastReceiver() {
         val ctx = context.applicationContext
         val pending = goAsync()
         val action = intent.action
-        if (action != Scheduler.ACTION_RAIN) Scheduler.scheduleAll(ctx)
+        if (action == Scheduler.ACTION_MORNING || action == Scheduler.ACTION_EVENING || action == null) Scheduler.scheduleAll(ctx)
+        if (action == Scheduler.ACTION_PLAN || action == Scheduler.ACTION_WARN) {
+            Thread {
+                try {
+                    val p = Prefs(ctx)
+                    L.use(p)
+                    if (action == Scheduler.ACTION_PLAN) planReminder(ctx, p) else warnings(ctx, p)
+                } catch (_: Exception) {
+                } finally {
+                    pending.finish()
+                }
+            }.start()
+            return
+        }
         Thread {
             try {
                 val p = Prefs(ctx)
@@ -36,10 +49,21 @@ class AlarmReceiver : BroadcastReceiver() {
                     action == Scheduler.ACTION_EVENING -> Notifier.show(ctx, result, 1)
                     else -> Notifier.show(ctx, result, 0)
                 }
-                if (result != null) {
+                if (result != null && source != null) {
                     Scheduler.scheduleRain(ctx, result)
                     Widget.updateAll(ctx, result)
+                    WatchSync.send(ctx, result, source, p)
+                    // High pollen for the types you're allergic to: once, with the morning reminder.
+                    if (action == Scheduler.ACTION_MORNING && p.pollenNotifiedDay != java.time.LocalDate.now().toString()) {
+                        Pollen.days(source, p).firstOrNull { it.date == java.time.LocalDate.now() }
+                            ?.let { Pollen.alert(it, Pollen.selected(p)) }
+                            ?.let { (title, text) ->
+                                Notifier.pollen(ctx, title, text)
+                                p.pollenNotifiedDay = java.time.LocalDate.now().toString()
+                            }
+                    }
                 }
+                if (action != Scheduler.ACTION_RAIN) warnings(ctx, p)
                 // Once a morning, mention a new version (only once per version).
                 if (action == null || action == Scheduler.ACTION_MORNING) {
                     runCatching { Updater.newer(ctx) }.getOrNull()?.let { r ->
@@ -55,6 +79,26 @@ class AlarmReceiver : BroadcastReceiver() {
             }
         }.start()
     }
+}
+
+/** Downloads warnings and notifies the new ones. */
+private fun warnings(ctx: Context, p: Prefs) {
+    if (!p.warnOn) return
+    val list = runCatching { Warnings.fetch(ctx, p) }.getOrNull() ?: return
+    Notifier.warnings(ctx, Warnings.fresh(p, list))
+}
+
+/** 30 minutes before a plan: what the weather does and what to take. Then set the next reminder. */
+private fun planReminder(ctx: Context, p: Prefs) {
+    val now = java.time.LocalDateTime.now()
+    val item = Calendars.itemsFor(ctx, p, now.toLocalDate()).filter { it.plan?.remind == true }
+        .firstOrNull { val m = java.time.Duration.between(now.toLocalTime(), it.start).toMinutes(); m in 0..45 }
+    if (item != null) {
+        val json = runCatching { Repo.fetchJson(ctx, p) }.getOrNull() ?: Repo.cached(ctx)?.json
+        val tip = json?.let { runCatching { PlanAdvice.of(item, Hourly(it), p) }.getOrNull() }
+        Notifier.plan(ctx, item, tip)
+    }
+    Scheduler.schedulePlans(ctx)
 }
 
 /** Alarms are cleared on reboot and on app updates, so set them again. */

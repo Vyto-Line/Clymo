@@ -117,6 +117,10 @@ object Ico {
     val up = make("up", "M12 19V5M6 11l6-6 6 6")
     val down = make("down", "M12 5v14M6 13l6 6 6-6")
     val chevron = make("chevron", "M9 5l7 7-7 7", width = 2.5f)
+    val warn = make("warn", "M12 3L2 20h20L12 3z", "M12 10v4", "M12 17v.01", width = 2.2f)
+    val plus = make("plus", "M12 5v14M5 12h14", width = 2.5f)
+    val close = make("close", "M6 6l12 12M18 6L6 18")
+    val leaf = make("leaf", "M5 19C5 10 10 5 20 4c-1 10-6 15-15 15z", "M5 19l8-8")
     val bell = make("bell", "M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z", "M10 20a2 2 0 0 0 4 0")
 
     fun garment(g: Garment) = when (g) {

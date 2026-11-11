@@ -87,7 +87,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
-private fun Screen(content: @Composable ColumnScope.() -> Unit) {
+internal fun Screen(content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -116,6 +116,11 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
     val fc = s.forecast
     val day = fc?.days?.firstOrNull()
     val f = Fmt(s.prefs.fahrenheit)
+    var openWarning by remember { mutableStateOf<com.alex.dresscast.Warning?>(null) }
+    var planSheet by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<com.alex.dresscast.Plan?>(null) }
+    openWarning?.let { w -> WarningSheet(s.warnings, w, pal) { openWarning = null } }
+    if (planSheet) PlanSheet(s, pal, editing) { planSheet = false; editing = null }
     PullToRefreshBox(isRefreshing = s.pulling, onRefresh = { s.refresh(byUser = true) }, modifier = Modifier.fillMaxSize()) {
         Screen {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -123,6 +128,8 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
                 Text(" " + s.prefs.city, color = pal.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f), maxLines = 1)
                 Text(LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMMM", L.locale)), color = pal.muted, fontSize = 13.sp)
             }
+
+            if (s.warnings.isNotEmpty()) WarningBanner(s.warnings, pal) { openWarning = it }
 
             s.issues.firstOrNull()?.let { issue ->
                 Card(pal, Modifier.border(2.dp, pal.accent, RoundedCornerShape(20.dp))) {
@@ -193,6 +200,12 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
             }
 
             if (day != null) {
+                Box(Modifier.enter(1)) {
+                    PlansCard(s, pal, onAdd = { editing = null; planSheet = true }, onEdit = { editing = it; planSheet = true })
+                }
+                s.pollen.firstOrNull { it.date == LocalDate.now() }?.let { pd ->
+                    Box(Modifier.enter(1)) { PollenCard(pd, com.alex.dresscast.Pollen.selected(s.prefs), pal) }
+                }
                 Box(Modifier.enter(1)) { PeriodsCard(day, f, pal) }
                 s.details?.let { d ->
                     if (d.next.isNotEmpty()) Box(Modifier.enter(2)) { NextHoursCard(d, f, pal) }
@@ -552,6 +565,11 @@ private fun PeriodsCard(day: DayAdvice, f: Fmt, pal: Pal) {
 fun WeekScreen(s: AppState, pal: Pal) {
     val fc = s.forecast
     val f = Fmt(s.prefs.fahrenheit)
+    var openWarning by remember { mutableStateOf<com.alex.dresscast.Warning?>(null) }
+    var planSheet by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<com.alex.dresscast.Plan?>(null) }
+    openWarning?.let { w -> WarningSheet(s.warnings, w, pal) { openWarning = null } }
+    if (planSheet) PlanSheet(s, pal, editing) { planSheet = false; editing = null }
     PullToRefreshBox(isRefreshing = s.pulling, onRefresh = { s.refresh(byUser = true) }, modifier = Modifier.fillMaxSize()) {
         Screen {
             Column {
@@ -623,7 +641,7 @@ fun WeekScreen(s: AppState, pal: Pal) {
 // ---------------------------------------------------------------- Settings
 
 @Composable
-private fun SettingRow(title: String, sub: String?, pal: Pal, trailing: @Composable () -> Unit) {
+internal fun SettingRow(title: String, sub: String?, pal: Pal, trailing: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f).padding(end = 10.dp)) {
             Text(title, color = pal.ink, fontSize = 16.sp)
@@ -634,7 +652,7 @@ private fun SettingRow(title: String, sub: String?, pal: Pal, trailing: @Composa
 }
 
 @Composable
-private fun Divider(pal: Pal) = HorizontalDivider(Modifier.padding(vertical = 12.dp), color = pal.track)
+internal fun Divider(pal: Pal) = HorizontalDivider(Modifier.padding(vertical = 12.dp), color = pal.track)
 
 @Composable
 fun SettingsScreen(s: AppState, pal: Pal) {
@@ -643,6 +661,9 @@ fun SettingsScreen(s: AppState, pal: Pal) {
     val locate = rememberLocate(s)
     var askCity by remember { mutableStateOf(false) }
     if (askCity) CityDialog({ askCity = false }) { s.setCity(it) }
+    val calLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { ok -> p.calOn = ok; s.rebuild() }
 
     Screen {
         Title(t("Settings", "Ρυθμίσεις"), pal)
@@ -687,6 +708,15 @@ fun SettingsScreen(s: AppState, pal: Pal) {
 
         Label(t("Location", "Τοποθεσία"), pal.muted)
         LocationCard(s, pal)
+
+        Label(t("Calendars", "Ημερολόγια"), pal.muted)
+        CalendarsCard(s, pal) { calLauncher.launch(android.Manifest.permission.READ_CALENDAR) }
+
+        Label(t("Weather warnings", "Προειδοποιήσεις καιρού"), pal.muted)
+        WarningsCard(s, pal)
+
+        Label(t("Pollen", "Γύρη"), pal.muted)
+        PollenSettingsCard(s, pal)
 
         Label(t("Hours outside", "Ώρες έξω"), pal.muted)
         HoursCard(s, pal)

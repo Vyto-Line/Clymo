@@ -49,4 +49,6 @@ dependencies {
     implementation 'androidx.activity:activity-compose:1.9.3'
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+    // Sends the summary to the Wear OS app
+    implementation 'com.google.android.gms:play-services-wearable:18.2.0'
 }
