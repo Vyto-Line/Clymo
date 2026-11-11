@@ -68,6 +68,12 @@ class Prefs(context: Context) {
     /** The hours you're usually outside; advice only looks at these. */
     var outFrom: Int by Pref("outFrom", 7)
     var outTo: Int by Pref("outTo", 22)
+    /** Different hours outside on Saturday and Sunday. */
+    var weekend: Boolean by Pref("weekend", false)
+    var wFrom: Int by Pref("wFrom", 10)
+    var wTo: Int by Pref("wTo", 24)
+    /** Saved places as JSON: [{"name":…,"lat":…,"lon":…}]. */
+    var savedPlaces: String by Pref("savedPlaces", "[]")
     var rainAlert: Boolean by Pref("rainAlert", true)
     /** "System", "en" or "el". */
     var lang: String by Pref("lang", "System")
@@ -77,6 +83,15 @@ class Prefs(context: Context) {
     val off: Set<String> get() = noItems.split(',').filter { it.isNotBlank() }.toSet()
     /** The newest version we've already sent a notification about. */
     var updateNotified: String by Pref("updateNotified", "")
+
+    /** The hours outside that apply on [date]: weekend hours on Sat/Sun if set. 24 means midnight. */
+    fun hoursFor(date: java.time.LocalDate): Pair<Int, Int> {
+        val wk = date.dayOfWeek == java.time.DayOfWeek.SATURDAY || date.dayOfWeek == java.time.DayOfWeek.SUNDAY
+        val (a, b) = if (weekend && wk) wFrom to wTo else outFrom to outTo
+        val from = minOf(a, b).coerceIn(0, 23)
+        val to = (maxOf(a, b) - if (maxOf(a, b) >= 24) 1 else 0).coerceIn(from, 23)
+        return from to to
+    }
 
     /** How many degrees to add to the real temperature before choosing clothes. */
     val shift: Double get() = comfort * 1.5 + learn

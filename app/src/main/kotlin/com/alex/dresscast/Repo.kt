@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 
-data class Place(val name: String, val lat: Double, val lon: Double)
+data class Place(val name: String, val lat: Double, val lon: Double, val region: String = "")
 data class Cached(val json: JSONObject, val fetchedAt: Long)
 
 /** Talks to Open-Meteo (free, no account or API key) and keeps the last forecast for offline use. */
@@ -54,6 +54,19 @@ object Repo {
         L.use(p)
         val json = runCatching { fetchJson(ctx, p) }.getOrNull() ?: cached(ctx)?.json ?: return null
         return runCatching { Advice.build(json, p) }.getOrNull()
+    }
+
+    /** Up to five places matching what's typed, for the search suggestions. */
+    fun suggest(query: String): List<Place> {
+        if (query.trim().length < 2) return emptyList()
+        val url = "https://geocoding-api.open-meteo.com/v1/search?count=5&language=" +
+            (if (L.greek) "el" else "en") + "&name=" + URLEncoder.encode(query.trim(), "UTF-8")
+        val results = JSONObject(get(url)).optJSONArray("results") ?: return emptyList()
+        return (0 until results.length()).map { results.getJSONObject(it) }.map { r ->
+            val country = r.optString("country", "")
+            val region = listOf(r.optString("admin1", ""), country).filter { it.isNotBlank() }.distinct().joinToString(", ")
+            Place(r.getString("name") + if (country.isEmpty()) "" else ", $country", r.getDouble("latitude"), r.getDouble("longitude"), region)
+        }
     }
 
     fun geocode(name: String): Place {

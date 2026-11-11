@@ -18,7 +18,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -120,19 +129,26 @@ fun DetailsScreen(s: AppState, pal: Pal, onBack: () -> Unit) {
         }
 
         if (d.hours.size >= 2) {
+            val nowHour = java.time.LocalTime.now().hour
+            var sel by remember(d.hours) {
+                mutableIntStateOf(d.hours.indexOfFirst { it.hour == nowHour }.takeIf { it >= 0 } ?: 0)
+            }
+            val listState = rememberLazyListState()
+            LaunchedEffect(sel) { listState.animateScrollToItem((sel - 2).coerceAtLeast(0)) }
             Card(pal, Modifier.enter(1)) {
                 Row(Modifier.fillMaxWidth()) {
                     Text(t("Hour by hour", "Ώρα με την ώρα"), color = pal.ink, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                    Text("${hh(d.hours.first().hour)}–${hh(d.hours.last().hour)}", color = pal.cardMuted, fontSize = 12.sp)
+                    Text(t("Tap an hour", "Πάτα σε μια ώρα"), color = pal.cardMuted, fontSize = 12.sp)
                 }
-                HourChart(d.hours, f, pal, Modifier.fillMaxWidth().height(190.dp).padding(top = 8.dp))
+                HourChart(d.hours, f, pal, sel, { sel = it }, Modifier.fillMaxWidth().height(190.dp).padding(top = 8.dp))
+                HourCard(d.hours[sel], d.hours[sel].hour == nowHour, f, pal, s.prefs.shift)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Legend(pal.accent, t("Feels like", "Αίσθηση"), pal)
                     Legend(pal.cardMuted, t("Actual", "Πραγματική"), pal, dashed = true)
                     Legend(pal.accent.copy(alpha = 0.35f), t("Rain chance", "Πιθ. βροχής"), pal, bar = true)
                 }
-                LazyRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(d.hours) { h -> HourChip(h, f, pal) }
+                LazyRow(Modifier.padding(top = 12.dp), state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    itemsIndexed(d.hours) { i, h -> HourChip(h, i == sel, f, pal) { sel = i } }
                 }
             }
         }
@@ -227,12 +243,14 @@ private fun Stat(label: String, value: String, note: String, pal: Pal, modifier:
 }
 
 @Composable
-private fun HourChip(h: HourInfo, f: Fmt, pal: Pal) {
+private fun HourChip(h: HourInfo, selected: Boolean, f: Fmt, pal: Pal, onClick: () -> Unit) {
     val wet = h.rain >= 50
     Column(
         Modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(if (wet) pal.tint else pal.track)
+            .background(if (selected) pal.tint else pal.track)
+            .border(2.dp, if (selected) pal.accent else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(14.dp))
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -244,9 +262,43 @@ private fun HourChip(h: HourInfo, f: Fmt, pal: Pal) {
     }
 }
 
+/** The weather at the hour you tapped. */
+@Composable
+private fun HourCard(h: HourInfo, isNow: Boolean, f: Fmt, pal: Pal, shift: Double) {
+    Column(
+        Modifier
+            .padding(top = 10.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(pal.tint.copy(alpha = 0.12f))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(hh(h.hour) + if (isNow) t(" · now", " · τώρα") else "", color = pal.ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display)
+            Icon(Ico.weather(h.code), null, Modifier.padding(start = 10.dp).size(20.dp), tint = pal.accent)
+            Text(" " + com.alex.dresscast.Advice.describe(h.code), color = pal.accent, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Row(Modifier.fillMaxWidth()) {
+            listOf(
+                t("Temperature", "Θερμοκρασία") to f.t(h.temp),
+                t("Feels like", "Αίσθηση") to f.t(h.feel),
+                t("Rain", "Βροχή") to "${h.rain}%",
+                t("Wind", "Άνεμος") to (h.wind?.let { "${it.roundToInt()} km/h" } ?: "–"),
+            ).forEach { (label, value) ->
+                Column(Modifier.weight(1f)) {
+                    Text(label, color = pal.cardMuted, fontSize = 11.sp, maxLines = 1)
+                    Text(value, color = pal.ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Text(DetailsBuilder.hourTip(h.feel, h.rain, shift), color = pal.muted, fontSize = 13.sp)
+    }
+}
+
 /** Feels-like line, actual temperature (dashed) and rain bars. Draws itself in when it appears. */
 @Composable
-private fun HourChart(hours: List<HourInfo>, f: Fmt, pal: Pal, modifier: Modifier) {
+private fun HourChart(hours: List<HourInfo>, f: Fmt, pal: Pal, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier) {
     val progress = remember(hours) { Animatable(0f) }
     LaunchedEffect(hours) { progress.animateTo(1f, tween(1300, easing = FastOutSlowInEasing)) }
     val measurer = rememberTextMeasurer()
@@ -259,7 +311,19 @@ private fun HourChart(hours: List<HourInfo>, f: Fmt, pal: Pal, modifier: Modifie
     val desc = t("Chart of how warm it feels each hour, from ${f.t(coldest.feel)} to ${f.t(warmest.feel)} at ${hh(warmest.hour)}.",
         "Γράφημα της θερμοκρασίας ανά ώρα, από ${f.t(coldest.feel)} έως ${f.t(warmest.feel)} στις ${hh(warmest.hour)}.")
 
-    Canvas(modifier.semantics { contentDescription = desc }) {
+    // Tap or drag anywhere on the chart to pick the nearest hour.
+    fun pick(x: Float, width: Float, density: Float) {
+        val left = 14 * density
+        val step = (width - 28 * density) / (hours.size - 1)
+        onSelect(((x - left) / step).roundToInt().coerceIn(0, hours.lastIndex))
+    }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    Canvas(
+        modifier
+            .semantics { contentDescription = desc }
+            .pointerInput(hours) { detectTapGestures { pick(it.x, size.width.toFloat(), density) } }
+            .pointerInput(hours) { detectHorizontalDragGestures { change, _ -> pick(change.position.x, size.width.toFloat(), density) } }
+    ) {
         val p = progress.value
         val left = 14.dp.toPx()
         val right = size.width - 14.dp.toPx()
@@ -297,6 +361,15 @@ private fun HourChart(hours: List<HourInfo>, f: Fmt, pal: Pal, modifier: Modifie
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))))
         drawPath(partial(line(hours.map { it.feel })), pal.accent, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
 
+        // The hour you picked: a vertical line and a marker on the line.
+        if (p >= 1f) {
+            val sx = x(selected)
+            drawLine(pal.accent.copy(alpha = 0.35f), Offset(sx, top - 6.dp.toPx()), Offset(sx, barBottom), strokeWidth = 2.dp.toPx())
+            val c = Offset(sx, y(hours[selected].feel))
+            drawCircle(pal.card, 7.dp.toPx(), c)
+            drawCircle(pal.accent, 7.dp.toPx(), c, style = Stroke(3.dp.toPx()))
+        }
+
         // Mark the coldest and warmest hours once the line reaches them.
         listOf(coldest, warmest).distinct().forEach { h ->
             val i = hours.indexOf(h)
@@ -311,10 +384,11 @@ private fun HourChart(hours: List<HourInfo>, f: Fmt, pal: Pal, modifier: Modifie
         }
 
         // Hour labels every few hours.
-        val every = if (hours.size > 12) 3 else 2
+        val every = if (hours.size > 18) 3 else 2
         hours.forEachIndexed { i, h ->
-            if (i % every == 0 || i == hours.lastIndex) {
-                val text = measurer.measure("%02d".format(h.hour), labelStyle)
+            if (i % every == 0 || i == selected) {
+                val style = if (i == selected) labelStyle.copy(color = pal.accent, fontWeight = FontWeight.Bold) else labelStyle
+                val text = measurer.measure("%02d".format(h.hour), style)
                 drawText(text, topLeft = Offset(x(i) - text.size.width / 2, barBottom + 4.dp.toPx()))
             }
         }

@@ -55,19 +55,22 @@ fun hh(h: Int) = "%02d:00".format(h)
 object Advice {
 
     fun build(json: JSONObject, p: Prefs): Forecast =
-        build(json, p.city, p.shift, p.outFrom, p.outTo, p.fahrenheit, p.off)
+        build(json, p.city, p.shift, { p.hoursFor(it) }, p.fahrenheit, p.off)
 
-    fun build(json: JSONObject, city: String, shift: Double, outFrom: Int, outTo: Int, fahrenheit: Boolean, off: Set<String> = emptySet()): Forecast {
+    fun build(
+        json: JSONObject, city: String, shift: Double, hoursFor: (LocalDate) -> Pair<Int, Int>,
+        fahrenheit: Boolean, off: Set<String> = emptySet(),
+    ): Forecast {
         val h = json.getJSONObject("hourly")
         val d = json.getJSONObject("daily")
         val dates = d.getJSONArray("time")
-        val from = minOf(outFrom, outTo).coerceIn(0, 23)
-        val to = maxOf(outFrom, outTo).coerceIn(0, 23)
         val today = LocalDate.now()
         val feels = Feels.hourly(h)
         val temps = h.optJSONArray("temperature_2m") ?: JSONArray()
         val days = (0 until dates.length()).map { i ->
-            day(i, LocalDate.parse(dates.getString(i)), d,
+            val date = LocalDate.parse(dates.getString(i))
+            val (from, to) = hoursFor(date)
+            day(i, date, d,
                 feels, temps,
                 h.getJSONArray("precipitation_probability"),
                 h.getJSONArray("weather_code"),

@@ -9,7 +9,7 @@ import java.time.LocalTime
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-data class HourInfo(val hour: Int, val temp: Double, val feel: Double, val rain: Int, val code: Int)
+data class HourInfo(val hour: Int, val temp: Double, val feel: Double, val rain: Int, val code: Int, val wind: Double? = null)
 data class Reason(val item: Item, val text: String)
 
 /** Everything on the "Today in detail" screen. */
@@ -50,12 +50,12 @@ object DetailsBuilder {
         val hum = h.optJSONArray("relative_humidity_2m")
         fun dv(key: String, at: Int = i) = d.optJSONArray(key).num(at)
 
-        val from = minOf(p.outFrom, p.outTo).coerceIn(0, 23)
-        val to = maxOf(p.outFrom, p.outTo).coerceIn(0, 23)
+        val (from, to) = p.hoursFor(today.date)
+        val windH = h.optJSONArray("wind_speed_10m")
         val range = if (to - from >= 4) from..to else 7..22
         val hours = range.mapNotNull { hr ->
             val f = feel.num(base + hr) ?: return@mapNotNull null
-            HourInfo(hr, temp.num(base + hr) ?: f, f, rain.num(base + hr)?.roundToInt() ?: 0, code.num(base + hr)?.toInt() ?: 0)
+            HourInfo(hr, temp.num(base + hr) ?: f, f, rain.num(base + hr)?.roundToInt() ?: 0, code.num(base + hr)?.toInt() ?: 0, windH.num(base + hr))
         }
 
         val nowHour = if (today.date == LocalDate.now()) LocalTime.now().hour else 8
@@ -120,6 +120,19 @@ object DetailsBuilder {
             }
             Reason(item, text)
         }
+    }
+
+    /** A one-line tip for a single hour, used when you tap an hour in the chart. */
+    fun hourTip(feel: Double, rain: Int, shift: Double): String {
+        val a = feel + shift
+        val base = when {
+            a >= 21 -> t("A T-shirt is enough.", "Κοντομάνικο αρκεί.")
+            a >= 18 -> t("T-shirt, with something light at hand.", "Κοντομάνικο, με κάτι ελαφρύ πρόχειρο.")
+            a >= 13 -> t("Better wear a light jacket.", "Καλύτερα ελαφρύ μπουφάν.")
+            a >= 7 -> t("Wear a jacket.", "Φόρεσε μπουφάν.")
+            else -> t("Wear a warm coat.", "Φόρεσε ζεστό παλτό.")
+        }
+        return base + if (rain >= 50) t(" Take an umbrella.", " Πάρε ομπρέλα.") else ""
     }
 
     // ---- Words for the stat cards

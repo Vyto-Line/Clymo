@@ -479,31 +479,11 @@ fun SettingsScreen(s: AppState, pal: Pal) {
             Pill(t("Send a test notification", "Δοκιμαστική ειδοποίηση"), pal, Modifier.fillMaxWidth(), icon = Ico.bell) { s.testNotification() }
         }
 
-        Label(t("Your day", "Η μέρα σου"), pal.muted)
-        Card(pal) {
-            Text(t("When are you usually outside?", "Πότε είσαι συνήθως έξω;"), color = pal.ink, fontSize = 16.sp)
-            Text(t("Advice only looks at these hours. If you're home by 17:00, evening rain won't count.",
-                "Οι προτάσεις λαμβάνουν υπόψη μόνο αυτές τις ώρες. Αν είσαι σπίτι στις 17:00, η βραδινή βροχή δεν μετράει."),
-                color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
-            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Pill(t("From ", "Από ") + hh(p.outFrom), pal, Modifier.weight(1f)) {
-                    pickTime(ctx, p.outFrom, 0) { h, _ -> p.outFrom = h; s.rebuild() }
-                }
-                Pill(t("Until ", "Έως ") + hh(p.outTo), pal, Modifier.weight(1f)) {
-                    pickTime(ctx, p.outTo, 0) { h, _ -> p.outTo = h; s.rebuild() }
-                }
-            }
-        }
-
         Label(t("Location", "Τοποθεσία"), pal.muted)
-        Card(pal) {
-            Text(if (p.useGps) t("Using your location: ", "Η τοποθεσία σου: ") + p.city else p.city, color = pal.ink, fontSize = 16.sp)
-            s.status?.let { Text(it, color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp)) }
-            Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Pill(t("My location", "Τοποθεσία μου"), pal, Modifier.weight(1f), primary = true, icon = Ico.pin) { locate() }
-                Pill(t("Type a city", "Γράψε πόλη"), pal, Modifier.weight(1f)) { askCity = true }
-            }
-        }
+        LocationCard(s, pal)
+
+        Label(t("Hours outside", "Ώρες έξω"), pal.muted)
+        HoursCard(s, pal)
 
         Label(t("Advice", "Προτάσεις"), pal.muted)
         Card(pal) {
