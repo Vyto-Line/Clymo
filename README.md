@@ -23,11 +23,16 @@ At the time you choose, it sends a notification like **"Light jacket + umbrella 
 - A notification at the time you pick, with the outfit and the day's weather
 - An optional 21:00 preview of tomorrow's outfit
 - A warning about an hour before rain starts, while you're out
+- **Official weather warnings** (yellow, orange, red) from your national weather service, via MeteoAlarm
+- A heads-up when the **pollen** you're allergic to is high
 
 **In the app**
 - Animated weather picture with the temperature and a one-line summary
 - Outfit cards you can tick off, plus morning, afternoon and evening at a glance
 - Tap the picture for **Today in detail**: an hour-by-hour chart (tap any hour to see its weather), why each item was chosen, wind, UV, humidity, sunrise and sunset, rain and air quality, and a comparison with yesterday
+- **Your plans for the day**: add plans (one-off or repeating, outside, inside or a commute) and see the weather during each one and what to take, with a reminder 30 minutes before you leave
+- **Linked calendars**: Samsung Calendar, Google, Outlook or any calendar on your phone, read only on the device
+- **Pollen** for olive, grass, birch, ragweed, mugwort and alder (Europe)
 - **Week ahead** with what to wear each day
 - Automatic location or search for a city, with saved places
 - Light and dark mode, English and Greek, °C and °F
@@ -61,6 +66,12 @@ One **DressCast** widget that changes layout as you resize it, from a single til
 
 To add one, long-press your home screen, choose **Widgets** and find **DressCast**.
 
+## Wear OS
+
+A **Today** tile (temperature, feels-like, what to wear, rain), a **Next plan** tile and a watch-face complication with today's main garment and the temperature. The watch app gets its data from the phone app.
+
+To install it, download **DressCast-Watch.apk** from the [latest release](https://github.com/Vyto-Line/DressCast/releases/latest) and install it on your watch with `adb install DressCast-Watch.apk` (turn on **Developer options → ADB debugging / Wireless debugging** on the watch first), or with an app like *Wear Installer*. Then long-press the watch face or swipe to the tiles to add them.
+
 ## Install
 
 1. On your phone, open the **[latest release](https://github.com/Vyto-Line/DressCast/releases/latest)** and tap **DressCast.apk**.
@@ -79,7 +90,8 @@ DressCast looks at the **feels-like** temperature during the hours you're outsid
 
 - No account, no ads, no analytics.
 - Your location is only used to get the forecast, at city level (coarse location), and only if you choose "Use my location".
-- Weather comes from [Open-Meteo](https://open-meteo.com), and updates are checked against this GitHub page. Nothing else leaves your phone.
+- Calendars are read only on your phone, and only if you link them. Event details are never sent anywhere.
+- Weather comes from [Open-Meteo](https://open-meteo.com), warnings from [MeteoAlarm](https://meteoalarm.org), and updates are checked against this GitHub page. Nothing else leaves your phone.
 
 ## Build it yourself
 
@@ -89,7 +101,9 @@ To build locally, open the project in Android Studio. First download the two fon
 
 ## Credits
 
-- Weather and air quality data: [Open-Meteo](https://open-meteo.com) (CC BY 4.0)
+- Weather, air quality and pollen data: [Open-Meteo](https://open-meteo.com) (CC BY 4.0); pollen from Copernicus Atmosphere Monitoring Service
+- Weather warnings: [MeteoAlarm](https://meteoalarm.org) and the national weather services (EUMETNET)
+- Warning region shapes: [meteoalarm](https://github.com/NiklasJordan/meteoalarm) by Niklas Jordan (MIT)
 - Fonts: [Inter](https://rsms.me/inter/) and [Space Grotesk](https://floriankarsten.github.io/space-grotesk/), SIL Open Font License
 - Built with Kotlin and Jetpack Compose
 

@@ -173,7 +173,7 @@ object Warnings {
         for (e in entries) {
             if (e.expires != null && e.expires.isBefore(now)) continue
             if (e.onset != null && e.onset.isAfter(horizon)) continue
-            if (e.level in 1..3 && e.level < p.warnLevel) continue
+            if (e.level < p.warnLevel) continue          // includes green "Minor" (0) entries
             val w = runCatching { e.cap?.let { parseCap(get(it), e) } }.getOrNull() ?: e.toWarning() ?: continue
             if (w.level < p.warnLevel || w.level < 1 || w.expires.isBefore(now) || w.onset.isAfter(horizon)) continue
             out += w

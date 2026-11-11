@@ -49,10 +49,10 @@ class AlarmReceiver : BroadcastReceiver() {
                     action == Scheduler.ACTION_EVENING -> Notifier.show(ctx, result, 1)
                     else -> Notifier.show(ctx, result, 0)
                 }
-                if (result != null && source != null) {
+                if (result != null) {
                     Scheduler.scheduleRain(ctx, result)
                     Widget.updateAll(ctx, result)
-                    WatchSync.send(ctx, result, source, p)
+                    WatchSync.send(ctx, result, source!!, p)
                     // High pollen for the types you're allergic to: once, with the morning reminder.
                     if (action == Scheduler.ACTION_MORNING && p.pollenNotifiedDay != java.time.LocalDate.now().toString()) {
                         Pollen.days(source, p).firstOrNull { it.date == java.time.LocalDate.now() }
