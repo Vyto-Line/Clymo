@@ -269,7 +269,7 @@ private fun OutfitCard(item: Item, checked: Boolean, pal: Pal, modifier: Modifie
                     .border(2.dp, if (checked) pal.accent else pal.cardMuted, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                AnimatedVisibility(checked, enter = scaleIn(spring(dampingRatio = 0.4f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
+                androidx.compose.animation.AnimatedVisibility(visible = checked, enter = scaleIn(spring(dampingRatio = 0.4f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
                     Icon(Ico.check, null, Modifier.size(14.dp), tint = pal.onAccent)
                 }
             }
