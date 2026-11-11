@@ -70,6 +70,8 @@ To add one, long-press your home screen, choose **Widgets** and find **DressCast
 
 A **Today** tile (temperature, feels-like, what to wear, rain), a **Next plan** tile and a watch-face complication with today's main garment and the temperature. The watch app gets its data from the phone app.
 
+**Install it on the watch only.** Opening it on your phone replaces the phone app (if that happens, just install DressCast.apk again; your settings are kept).
+
 To install it, download **DressCast-Watch.apk** from the [latest release](https://github.com/Vyto-Line/DressCast/releases/latest) and install it on your watch with `adb install DressCast-Watch.apk` (turn on **Developer options → ADB debugging / Wireless debugging** on the watch first), or with an app like *Wear Installer*. Then long-press the watch face or swipe to the tiles to add them.
 
 ## Install

@@ -40,5 +40,5 @@ jobs:
           cp wear/build/outputs/apk/release/*.apk DressCast-Watch.apk
           gh release create "v$VERSION" DressCast.apk DressCast-Watch.apk \
             --title "DressCast $VERSION" \
-            --notes "Download **DressCast.apk** below and open it on your phone to install. **DressCast-Watch.apk** is the Wear OS app (tiles and a watch-face complication); install it on your watch." \
+            --notes "Download **DressCast.apk** below and open it on your phone to install. **DressCast-Watch.apk** is only for Wear OS watches (tiles and a watch-face complication). Do not open it on your phone: it would replace the phone app." \
             --latest

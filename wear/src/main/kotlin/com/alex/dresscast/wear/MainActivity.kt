@@ -16,6 +16,11 @@ import com.google.android.gms.wearable.Wearable
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Installed on a phone by mistake: it replaced the phone app, so help get that back.
+        if (!packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_WATCH)) {
+            wrongDevice()
+            return
+        }
         show()
         // Pick up the phone's latest summary, in case it arrived before this app was installed.
         Wearable.getDataClient(this).dataItems.addOnSuccessListener { items ->
@@ -27,6 +32,33 @@ class MainActivity : Activity() {
             items.release()
             if (found) { Store.refreshAll(this); show() }
         }
+    }
+
+    private fun wrongDevice() {
+        val el = java.util.Locale.getDefault().language == "el"
+        fun t(en: String, gr: String) = if (el) gr else en
+        val pad = (resources.displayMetrics.density * 28).toInt()
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(pad, pad, pad, pad)
+        }
+        col.addView(tv(t("This is the watch version", "Αυτή είναι η έκδοση για ρολόι"), 22f, bold = true))
+        col.addView(tv(t("\nIt replaced DressCast on your phone. Install the phone app again; your settings are kept.\n",
+            "\nΑντικατέστησε το DressCast στο κινητό σου. Εγκατάστησε ξανά την εφαρμογή για κινητό· οι ρυθμίσεις σου διατηρούνται.\n"),
+            16f, Color.parseColor("#B3BDCA")))
+        col.addView(android.widget.Button(this).apply {
+            text = t("Download the phone app", "Λήψη εφαρμογής για κινητό")
+            setOnClickListener {
+                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://github.com/Vyto-Line/DressCast/releases/latest/download/DressCast.apk")))
+            }
+        })
+        setContentView(LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.BLACK)
+            addView(col)
+        })
     }
 
     private fun tv(s: String, size: Float, color: Int = Color.WHITE, bold: Boolean = false) = TextView(this).apply {
