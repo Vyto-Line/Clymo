@@ -112,6 +112,7 @@ object Ico {
     val sliders = make("sliders", "M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12", circle(16f, 6f, 2f), circle(10f, 12f, 2f), circle(18f, 18f, 2f))
     val check = make("check", "M5 12.5l4.5 4.5L19 7", width = 3.5f)
     val back = make("back", "M15 5l-7 7 7 7")
+    val moon = make("moon", "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z", width = 1.8f)
     val search = make("search", circle(11f, 11f, 7f), "M20 20l-4-4")
     val up = make("up", "M12 19V5M6 11l6-6 6 6")
     val down = make("down", "M12 5v14M6 13l6 6 6-6")

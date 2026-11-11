@@ -132,7 +132,7 @@ fun App(s: AppState, activity: ComponentActivity) {
                                 label = "tabs",
                             ) { current ->
                                 when (current) {
-                                    0 -> TodayScreen(s, pal) { showDetails = true }
+                                    0 -> TodayScreen(s, pal, onOpenDetails = { showDetails = true }, onOpenWeek = { tab = 1 })
                                     1 -> WeekScreen(s, pal)
                                     else -> SettingsScreen(s, pal)
                                 }

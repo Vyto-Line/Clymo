@@ -9,12 +9,14 @@ import java.time.LocalTime
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-data class HourInfo(val hour: Int, val temp: Double, val feel: Double, val rain: Int, val code: Int, val wind: Double? = null)
+data class HourInfo(val hour: Int, val temp: Double, val feel: Double, val rain: Int, val code: Int, val wind: Double? = null, val night: Boolean = false)
 data class Reason(val item: Item, val text: String)
 
 /** Everything on the "Today in detail" screen. */
 data class Details(
     val hours: List<HourInfo>,
+    /** Now and the next five hours (may run past midnight). */
+    val next: List<HourInfo>,
     val humidityNow: Int?,
     val humidityLater: Int?,
     val wind: Double,
@@ -59,6 +61,15 @@ object DetailsBuilder {
         }
 
         val nowHour = if (today.date == LocalDate.now()) LocalTime.now().hour else 8
+        val riseH = d.optJSONArray("sunrise")?.optString(i)?.substringAfter('T')?.let { runCatching { LocalTime.parse(it).hour }.getOrNull() } ?: 7
+        val setH = d.optJSONArray("sunset")?.optString(i)?.substringAfter('T')?.let { runCatching { LocalTime.parse(it).hour }.getOrNull() } ?: 18
+        val next = (0..5).mapNotNull { k ->
+            val idx = base + nowHour + k
+            val fl = feel.num(idx) ?: return@mapNotNull null
+            val hr = (nowHour + k) % 24
+            HourInfo(hr, temp.num(idx) ?: fl, fl, rain.num(idx)?.roundToInt() ?: 0, code.num(idx)?.toInt() ?: 0,
+                h.optJSONArray("wind_speed_10m").num(idx), night = hr < riseH || hr > setH)
+        }
         val humNow = hum.num(base + nowHour)?.roundToInt()
         val humLater = (nowHour..23).mapNotNull { hum.num(base + it) }.maxOrNull()?.roundToInt()
 
@@ -77,6 +88,7 @@ object DetailsBuilder {
 
         Details(
             hours = hours,
+            next = next,
             humidityNow = humNow,
             humidityLater = humLater,
             wind = wind,

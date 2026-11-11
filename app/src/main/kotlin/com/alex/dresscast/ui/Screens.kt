@@ -59,6 +59,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -109,7 +111,7 @@ private fun open(ctx: Context, issue: Issue) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
+fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWeek: () -> Unit = {}) {
     val ctx = LocalContext.current
     val fc = s.forecast
     val day = fc?.days?.firstOrNull()
@@ -132,7 +134,7 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
 
             if (s.update != null) UpdateCard(s, pal, compact = true)
 
-            // Hero: drawn weather scene with today's summary on top. Tap for details.
+            // Hero: weather now, with today's outfit in a frosted band at the bottom. Tap for details.
             val press = remember { MutableInteractionSource() }
             val pressed by press.collectIsPressedAsState()
             val heroScale by animateFloatAsState(if (pressed) 0.97f else 1f, spring(stiffness = Spring.StiffnessMediumLow), label = "hero")
@@ -141,13 +143,13 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
                     .enter(0)
                     .graphicsLayer { scaleX = heroScale; scaleY = heroScale }
                     .fillMaxWidth()
-                    .height(222.dp)
-                    .clip(RoundedCornerShape(24.dp))
+                    .heightIn(min = 222.dp)
+                    .clip(RoundedCornerShape(26.dp))
                     .background(pal.scene.sky)
                     .clickable(interactionSource = press, indication = null, enabled = day != null, role = Role.Button,
                         onClickLabel = t("Show details", "Λεπτομέρειες"), onClick = onOpenDetails)
             ) {
-                WeatherScene(day?.mood ?: Mood.Mild, pal.scene, Modifier.fillMaxSize(), storm = (day?.code ?: 0) >= 95)
+                WeatherScene(day?.mood ?: Mood.Mild, pal.scene, Modifier.matchParentSize(), storm = (day?.code ?: 0) >= 95)
                 if (day != null) {
                     Row(
                         Modifier
@@ -162,23 +164,26 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
                         Icon(Ico.chevron, null, Modifier.size(14.dp), tint = Color(0xFF14181F))
                     }
                 }
-                Column(Modifier.padding(start = 18.dp, top = 12.dp, end = 96.dp)) {
-                    CountUp(day?.let { it.now ?: it.tMax }, f, pal.scene.ink)
-                    if (day != null) Text(
-                        listOfNotNull(
-                            day.feelNow?.let { t("Feels like ${f.t(it)}", "Αίσθηση ${f.t(it)}") },
-                            t("High ${f.t(day.tMax)}", "Μέγ. ${f.t(day.tMax)}"),
-                            t("Low ${f.t(day.tMin)}", "Ελάχ. ${f.t(day.tMin)}"),
-                        ).joinToString(" · "),
-                        color = pal.scene.ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                    Text(
-                        day?.headline ?: if (s.error != null) t("Couldn't load the weather", "Δεν φόρτωσε ο καιρός") else t("Loading…", "Φόρτωση…"),
-                        color = pal.scene.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 26.sp,
-                    )
-                    if (day == null && s.error != null) Text(t("Check your internet connection.", "Έλεγξε τη σύνδεσή σου."),
-                        color = pal.scene.ink, fontSize = 13.sp, lineHeight = 18.sp)
-                    else if (day != null && day.wind >= 30) Text(t("Windy today", "Αέρας σήμερα"), color = pal.scene.ink, fontSize = 13.sp)
+                Column(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(start = 18.dp, top = 12.dp, end = 96.dp)) {
+                        CountUp(day?.let { it.now ?: it.tMax }, f, pal.scene.ink)
+                        if (day != null) Text(
+                            listOfNotNull(
+                                day.feelNow?.let { t("Feels like ${f.t(it)}", "Αίσθηση ${f.t(it)}") },
+                                t("High ${f.t(day.tMax)}", "Μέγ. ${f.t(day.tMax)}"),
+                                t("Low ${f.t(day.tMin)}", "Ελάχ. ${f.t(day.tMin)}"),
+                            ).joinToString(" · "),
+                            color = pal.scene.ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp),
+                        )
+                        Text(
+                            day?.headline ?: if (s.error != null) t("Couldn't load the weather", "Δεν φόρτωσε ο καιρός") else t("Loading…", "Φόρτωση…"),
+                            color = pal.scene.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 26.sp,
+                        )
+                        if (day == null && s.error != null) Text(t("Check your internet connection.", "Έλεγξε τη σύνδεσή σου."),
+                            color = pal.scene.ink, fontSize = 13.sp, lineHeight = 18.sp)
+                    }
+                    if (day != null) OutfitBand(day, s, pal)
+                    else Spacer(Modifier.height(16.dp))
                 }
             }
 
@@ -188,24 +193,225 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
             }
 
             if (day != null) {
-                val checked = s.checked()
-                Row(Modifier.fillMaxWidth()) {
-                    Label(t("Today, wear", "Σήμερα φόρεσε"), pal.muted, Modifier.weight(1f))
-                    Text(t("${checked.count { it < day.items.size }} of ${day.items.size} ready", "${checked.count { it < day.items.size }} από ${day.items.size} έτοιμα"),
-                        color = pal.muted, fontSize = 13.sp)
+                Box(Modifier.enter(1)) { PeriodsCard(day, f, pal) }
+                s.details?.let { d ->
+                    if (d.next.isNotEmpty()) Box(Modifier.enter(2)) { NextHoursCard(d, f, pal) }
+                    if (d.sunrise != null && d.sunset != null) Box(Modifier.enter(3)) { SunCard(d, pal) }
+                    Box(Modifier.enter(4)) { QuickFacts(d, day, pal) }
                 }
-                day.items.withIndex().chunked(2).forEachIndexed { r, row ->
-                    Row(Modifier.enter(1 + r), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        row.forEach { (i, item) ->
-                            OutfitCard(item, i in checked, pal, Modifier.weight(1f)) { s.toggle(i) }
-                        }
-                        if (row.size == 1) Spacer(Modifier.weight(1f))
-                    }
-                }
-                Box(Modifier.enter(3)) { PeriodsCard(day, f, pal) }
-                Box(Modifier.enter(4)) { Feedback(s, pal) }
+                fc?.days?.getOrNull(1)?.let { tomorrow -> Box(Modifier.enter(5)) { TomorrowCard(tomorrow, f, pal, onOpenWeek) } }
+                Box(Modifier.enter(6)) { Feedback(s, pal) }
             }
         }
+    }
+}
+
+/** Today's outfit inside the picture: tap a chip to tick it off. */
+@Composable
+private fun OutfitBand(day: DayAdvice, s: AppState, pal: Pal) {
+    val checked = s.checked()
+    val ready = checked.count { it < day.items.size }
+    Column(
+        Modifier
+            .padding(start = 10.dp, end = 10.dp, top = 12.dp, bottom = 10.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (pal.dark) pal.card.copy(alpha = 0.78f) else Color.White.copy(alpha = 0.6f))
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+            Text(t("TODAY, WEAR", "ΣΗΜΕΡΑ ΦΟΡΕΣΕ"), color = pal.ink, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+            Text(t("$ready of ${day.items.size} ready", "$ready από ${day.items.size} έτοιμα"), color = pal.ink, fontSize = 12.sp)
+        }
+        day.items.withIndex().chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { (i, item) -> OutfitChip(item, i in checked, pal, Modifier.weight(1f)) { s.toggle(i) } }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun OutfitChip(item: Item, checked: Boolean, pal: Pal, modifier: Modifier, onToggle: () -> Unit) {
+    val bounce = remember { Animatable(1f) }
+    var first by remember { mutableStateOf(true) }
+    LaunchedEffect(checked) {
+        if (first) { first = false; return@LaunchedEffect }
+        bounce.animateTo(0.93f, tween(90))
+        bounce.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = Spring.StiffnessMedium))
+    }
+    val bg by animateColorAsState(if (checked) pal.accent else if (pal.dark) pal.bg.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.92f), tween(250), label = "chip")
+    val fg = if (checked) pal.onAccent else pal.ink
+    Row(
+        modifier
+            .graphicsLayer { scaleX = bounce.value; scaleY = bounce.value }
+            .heightIn(min = 56.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(bg)
+            .toggleable(value = checked, role = Role.Checkbox) { onToggle() }
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(if (checked) Ico.check else Ico.garment(item.icon), null, Modifier.size(22.dp), tint = if (checked) fg else pal.accent)
+        Column(Modifier.padding(start = 8.dp)) {
+            Text(item.name, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Bold, lineHeight = 17.sp)
+            Text(item.why, color = fg.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 14.sp)
+        }
+    }
+}
+
+/** Now and the next five hours. */
+@Composable
+private fun NextHoursCard(d: com.alex.dresscast.Details, f: Fmt, pal: Pal) {
+    val wetSoon = d.next.firstOrNull { it.rain >= 40 }
+    Card(pal, padding = 12) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+            Text(t("Next hours", "Τις επόμενες ώρες"), color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Text(
+                wetSoon?.let { t("Rain likely around ${hh(it.hour)}", "Πιθανή βροχή γύρω στις ${hh(it.hour)}") } ?: t("Dry for now", "Στεγνά για τώρα"),
+                color = if (wetSoon != null) pal.accent else pal.cardMuted, fontSize = 12.sp, fontWeight = if (wetSoon != null) FontWeight.SemiBold else FontWeight.Normal,
+            )
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            d.next.forEachIndexed { i, h ->
+                val on = i == 0
+                Column(
+                    Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (on) pal.tint else Color.Transparent).padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(if (on) t("Now", "Τώρα") else hh(h.hour), color = if (on) pal.accent else pal.cardMuted, fontSize = 12.sp,
+                        fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
+                    Icon(if (h.night && h.code <= 3) Ico.moon else Ico.weather(h.code), null, Modifier.size(22.dp), tint = if (on) pal.accent else pal.ink)
+                    Text(f.t(h.feel), color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text("${h.rain}%", color = if (h.rain >= 40) pal.accent else pal.cardMuted, fontSize = 11.sp)
+                }
+            }
+        }
+    }
+}
+
+/** Where the sun is now, with sunrise, sunset and a countdown. */
+@Composable
+private fun SunCard(d: com.alex.dresscast.Details, pal: Pal) {
+    val rise = runCatching { java.time.LocalTime.parse(d.sunrise) }.getOrNull() ?: return
+    val set = runCatching { java.time.LocalTime.parse(d.sunset) }.getOrNull() ?: return
+    val now = LocalTime.now()
+    fun dur(a: LocalTime, b: LocalTime): String {
+        val m = java.time.Duration.between(a, b).toMinutes().toInt()
+        return if (m >= 60) t("${m / 60} h ${m % 60} min", "${m / 60} ώρ. ${m % 60} λεπ.") else t("$m min", "$m λεπτά")
+    }
+    val status = when {
+        now.isBefore(rise) -> t("Sunrise in ", "Ανατολή σε ") + dur(now, rise)
+        now.isBefore(set) -> t("Sunset in ", "Δύση σε ") + dur(now, set)
+        else -> t("The sun has set", "Ο ήλιος έδυσε")
+    }
+    val total = java.time.Duration.between(rise, set).toMinutes().toFloat().coerceAtLeast(1f)
+    val progress = (java.time.Duration.between(rise, now).toMinutes() / total).coerceIn(0f, 1f)
+    val sunColor = Color(0xFFFFD54F)
+    val warm = Color(0xFFE08A2E)
+    Card(pal) {
+        Row(Modifier.fillMaxWidth()) {
+            Text(t("Sun", "Ήλιος"), color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Text(status, color = warm, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        }
+        androidx.compose.foundation.Canvas(
+            Modifier.fillMaxWidth().height(90.dp).padding(vertical = 6.dp)
+                .semantics { contentDescription = "$status. " + t("Sunrise ${d.sunrise}, sunset ${d.sunset}.", "Ανατολή ${d.sunrise}, δύση ${d.sunset}.") }
+        ) {
+            val l = 12.dp.toPx(); val r = size.width - 12.dp.toPx(); val b = size.height - 4.dp.toPx(); val top = 2.dp.toPx()
+            // Quadratic arc from sunrise (left) to sunset (right).
+            fun point(t: Float): androidx.compose.ui.geometry.Offset {
+                val cx = (l + r) / 2; val cy = top - (b - top) * 0.9f
+                val x = (1 - t) * (1 - t) * l + 2 * (1 - t) * t * cx + t * t * r
+                val y = (1 - t) * (1 - t) * b + 2 * (1 - t) * t * cy + t * t * b
+                return androidx.compose.ui.geometry.Offset(x, y)
+            }
+            val full = androidx.compose.ui.graphics.Path().apply { moveTo(l, b); for (k in 1..40) point(k / 40f).let { lineTo(it.x, it.y) } }
+            drawPath(full, pal.track, style = androidx.compose.ui.graphics.drawscope.Stroke(4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            if (progress > 0f) {
+                val done = androidx.compose.ui.graphics.Path().apply { moveTo(l, b); for (k in 1..40) point(progress * k / 40f).let { lineTo(it.x, it.y) } }
+                drawPath(done, warm.copy(alpha = 0.6f), style = androidx.compose.ui.graphics.drawscope.Stroke(4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            }
+            drawLine(pal.track, androidx.compose.ui.geometry.Offset(0f, b), androidx.compose.ui.geometry.Offset(size.width, b), strokeWidth = 1.5.dp.toPx())
+            if (progress in 0.001f..0.999f) {
+                val c = point(progress)
+                drawCircle(pal.card, 12.dp.toPx(), c)
+                drawCircle(sunColor, 9.dp.toPx(), c)
+            }
+        }
+        Row(Modifier.fillMaxWidth()) {
+            Text(t("Sunrise ", "Ανατολή ") + d.sunrise, color = pal.ink, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            d.daylightMin?.let { Text(t("${it / 60} h ${it % 60} min of daylight", "${it / 60} ώρ. ${it % 60} λεπ. φως"), color = pal.cardMuted, fontSize = 12.sp, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center) }
+            Text(t("Sunset ", "Δύση ") + d.sunset, color = pal.ink, fontSize = 13.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+        }
+    }
+}
+
+/** Wind, UV, humidity and air quality, each with a short note. */
+@Composable
+private fun QuickFacts(d: com.alex.dresscast.Details, day: DayAdvice, pal: Pal) {
+    val windNow = d.next.firstOrNull()?.wind ?: d.wind
+    val facts = buildList {
+        add(Triple(t("Wind", "Άνεμος"), "${windNow.roundToInt()} km/h", com.alex.dresscast.DetailsBuilder.windFrom(d.windDir).ifBlank {
+            if (windNow < 20) t("Gentle", "Ήπιος") else t("Breezy", "Δυνατός") }))
+        add(Triple("UV", "${day.uv.roundToInt()} · ${com.alex.dresscast.DetailsBuilder.uvLevel(day.uv)}", when {
+            day.uv < 3 -> t("No sunscreen needed", "Δεν χρειάζεται αντηλιακό")
+            day.uv < 6 -> t("Sunscreen if out for long", "Αντηλιακό αν μείνεις πολύ έξω")
+            else -> t("Sunscreen needed", "Χρειάζεται αντηλιακό")
+        }))
+        d.humidityNow?.let { h ->
+            add(Triple(t("Humidity", "Υγρασία"), "$h%", when {
+                h < 30 -> t("Dry", "Ξηρή")
+                h <= 65 -> t("Comfortable", "Άνετα")
+                else -> t("Humid", "Υγρή")
+            }))
+        }
+        d.aqi?.let { a ->
+            val (level, note) = com.alex.dresscast.DetailsBuilder.aqiLevel(a)
+            add(Triple(t("Air quality", "Ποιότητα αέρα"), "$a · $level", note))
+        }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        facts.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                pair.forEach { (label, value, note) ->
+                    Column(
+                        Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(pal.card).padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(label.uppercase(L.locale), color = pal.cardMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
+                        Text(value, color = pal.ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display)
+                        Text(note, color = pal.cardMuted, fontSize = 12.sp)
+                    }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/** Tomorrow at a glance; tap to open the week. */
+@Composable
+private fun TomorrowCard(d: DayAdvice, f: Fmt, pal: Pal, onOpenWeek: () -> Unit) {
+    val dp = palette(d.mood, pal.dark)
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(pal.card)
+            .clickable(role = Role.Button, onClickLabel = t("Open the week", "Άνοιγμα εβδομάδας"), onClick = onOpenWeek)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(if (pal.dark) dp.card else dp.bg), contentAlignment = Alignment.Center) {
+            Icon(Ico.weather(d.code), null, Modifier.size(22.dp), tint = dp.accent)
+        }
+        Column(Modifier.weight(1f).padding(start = 14.dp)) {
+            Text(t("Tomorrow, ", "Αύριο, ") + d.date.dayOfWeek.getDisplayName(TextStyle.FULL, L.locale), color = pal.cardMuted, fontSize = 12.sp)
+            Text("${f.t(d.tMax)} · ${Advice.describe(d.code)}", color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(d.items.take(2).joinToString(", ") { it.name }, color = pal.muted, fontSize = 13.sp)
+        }
+        Icon(Ico.chevron, null, Modifier.size(18.dp), tint = pal.cardMuted)
     }
 }
 
