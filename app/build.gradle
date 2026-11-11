@@ -1,21 +1,52 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
 
 android {
     namespace 'com.alex.dresscast'
     compileSdk 35
+
     defaultConfig {
         applicationId "com.alex.dresscast"
         minSdk 26
         targetSdk 35
         versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1") as int)
-        versionName "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+        versionName "2.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
     }
+
+    // A fixed key, so each new version installs over the previous one.
+    signingConfigs {
+        release {
+            storeFile file("dresscast.keystore")
+            storePassword "UNokfQWVSKWTb91uZ34DWgLd"
+            keyAlias "dresscast"
+            keyPassword "UNokfQWVSKWTb91uZ34DWgLd"
+        }
+    }
+
     buildTypes {
-        // Signed with the debug key so the APK installs directly on your phone.
-        release { minifyEnabled false; signingConfig signingConfigs.debug }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    kotlinOptions { jvmTarget = '17' }
+    buildFeatures { compose true }
+}
+
+dependencies {
+    implementation platform('androidx.compose:compose-bom:2024.12.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
 }
