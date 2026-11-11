@@ -105,14 +105,14 @@ object DetailsBuilder {
                 item.icon == Garment.Jacket && day.rainFrom != null && item.why.contains('%') ->
                     t("${day.rainPct}% chance of rain from ${hh(day.rainFrom)}, while you're usually out. A hood keeps you dry without an umbrella.",
                         "${day.rainPct}% πιθανότητα βροχής από τις ${hh(day.rainFrom)}, όσο είσαι έξω. Η κουκούλα σε κρατά στεγνό χωρίς ομπρέλα.")
-                item.icon == Garment.Jacket && tempStart != null && day.wind >= 15 && tempStart - day.feelStart >= 1 ->
-                    t("It's ${f.t(tempStart)} at $start, but the ${day.wind.roundToInt()} km/h wind makes it feel like ${f.t(day.feelStart)}.",
-                        "Είναι ${f.t(tempStart)} στις $start, αλλά ο αέρας των ${day.wind.roundToInt()} km/h το κάνει να μοιάζει με ${f.t(day.feelStart)}.")
+                item.icon == Garment.Jacket && day.feelNow != null && day.feelEnd <= day.feelNow - 2 ->
+                    t("It cools down in the evening, to ${f.t(day.feelEnd)}.", "Δροσίζει το βράδυ, πέφτει στους ${f.t(day.feelEnd)}.")
+                item.icon == Garment.Jacket && day.feelNow != null ->
+                    t("Feels like ${f.t(day.feelNow)} now.", "Αίσθηση ${f.t(day.feelNow)} τώρα.")
                 item.icon == Garment.Jacket ->
-                    t("It feels like ${f.t(day.feelStart)} when you head out at $start.", "Θα μοιάζει με ${f.t(day.feelStart)} όταν βγεις στις $start.")
-                item.icon == Garment.Shirt && hasJacket && warmest != null && warmest.feel - day.feelStart >= 3 ->
-                    t("It warms to ${f.t(warmest.feel)} by ${hh(warmest.hour)}, so you can take the jacket off.",
-                        "Ζεσταίνει στους ${f.t(warmest.feel)} μέχρι τις ${hh(warmest.hour)}, οπότε μπορείς να βγάλεις το μπουφάν.")
+                    t("Feels like ${f.t(day.feelStart)} in the morning.", "Αίσθηση ${f.t(day.feelStart)} το πρωί.")
+                item.icon == Garment.Shirt && day.feelNow != null ->
+                    t("Feels like ${f.t(day.feelNow)} now, up to ${f.t(day.feelMax)} today.", "Αίσθηση ${f.t(day.feelNow)} τώρα, έως ${f.t(day.feelMax)} σήμερα.")
                 item.icon == Garment.Umbrella && day.rainFrom != null ->
                     t("${day.rainPct}% chance of rain from ${hh(day.rainFrom)}, while you're usually out.",
                         "${day.rainPct}% πιθανότητα βροχής από τις ${hh(day.rainFrom)}, όσο είσαι συνήθως έξω.")
