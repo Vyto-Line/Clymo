@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-label="DressCast: your weather, your outfit, every morning">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FB5EA"/><stop offset="1" stop-color="#CFE4F7"/>
+    </linearGradient>
+    <clipPath id="frame"><rect width="1200" height="420" rx="28"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="420" fill="url(#sky)"/>
+
+    <!-- sun with turning rays -->
+    <g transform="translate(930 120)">
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="40s" repeatCount="indefinite"/>
+        <g stroke="#FFD54F" stroke-width="6" stroke-linecap="round">
+          <line x1="0" y1="-64" x2="0" y2="-82"/><line x1="0" y1="64" x2="0" y2="82"/>
+          <line x1="-64" y1="0" x2="-82" y2="0"/><line x1="64" y1="0" x2="82" y2="0"/>
+          <line x1="45" y1="45" x2="58" y2="58"/><line x1="-45" y1="-45" x2="-58" y2="-58"/>
+          <line x1="45" y1="-45" x2="58" y2="-58"/><line x1="-45" y1="45" x2="-58" y2="58"/>
+        </g>
+      </g>
+      <circle r="52" fill="#FFD54F">
+        <animate attributeName="r" values="52;55;52" dur="4s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+
+    <!-- drifting clouds -->
+    <g fill="#FFFFFF">
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0 0;26 0;0 0" dur="12s" repeatCount="indefinite"/>
+        <circle cx="900" cy="178" r="30"/><circle cx="944" cy="162" r="40"/><circle cx="990" cy="182" r="28"/><rect x="900" y="178" width="90" height="32"/>
+      </g>
+      <g opacity="0.9">
+        <animateTransform attributeName="transform" type="translate" values="0 0;-30 0;0 0" dur="16s" repeatCount="indefinite"/>
+        <circle cx="720" cy="92" r="16"/><circle cx="742" cy="82" r="22"/><circle cx="768" cy="94" r="15"/><rect x="720" y="92" width="48" height="17"/>
+      </g>
+      <g opacity="0.85">
+        <animateTransform attributeName="transform" type="translate" values="0 0;20 0;0 0" dur="14s" repeatCount="indefinite"/>
+        <circle cx="1090" cy="70" r="14"/><circle cx="1110" cy="60" r="19"/><circle cx="1132" cy="72" r="13"/><rect x="1090" y="70" width="42" height="15"/>
+      </g>
+    </g>
+
+    <!-- a little rain shower on the far right -->
+    <g stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.8">
+      <line x1="1104" y1="96" x2="1098" y2="110"><animate attributeName="opacity" values="0;1;0" dur="1.2s" repeatCount="indefinite"/></line>
+      <line x1="1122" y1="100" x2="1116" y2="114"><animate attributeName="opacity" values="0;1;0" dur="1.2s" begin="0.4s" repeatCount="indefinite"/></line>
+      <line x1="1114" y1="112" x2="1108" y2="126"><animate attributeName="opacity" values="0;1;0" dur="1.2s" begin="0.8s" repeatCount="indefinite"/></line>
+    </g>
+
+    <!-- hills -->
+    <path d="M0 360 C200 320 420 340 600 316 S900 270 1200 300 L1200 420 L0 420 Z" fill="#7FB0A8"/>
+    <path d="M0 392 C260 368 520 388 760 366 S1060 350 1200 358 L1200 420 L0 420 Z" fill="#5E9488"/>
+
+    <!-- app icon -->
+    <g transform="translate(72 88)">
+      <rect width="128" height="128" rx="32" fill="#3B7DDD"/>
+      <g transform="translate(64 64) scale(0.95) translate(-54 -50)">
+        <g>
+          <animateTransform attributeName="transform" type="rotate" values="-4 54 42;4 54 42;-4 54 42" dur="3.5s" repeatCount="indefinite"/>
+          <path d="M54 14v4M36 32h4M68 32h4M41.3 19.3l2.8 2.8M66.7 19.3l-2.8 2.8" stroke="#FFD54F" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="54" cy="32" r="10" fill="#FFD54F"/>
+          <path d="M54 42v8L22 72c-3 2.2-1.6 6 2 6h60c3.6 0 5-3.8 2-6L54 50" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- title -->
+    <g font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fill="#0E1A2B">
+      <text x="230" y="150" font-size="72" font-weight="800" letter-spacing="-2">DressCast</text>
+      <text x="232" y="196" font-size="26" font-weight="600">Your weather. Your outfit. Every morning.</text>
+      <g transform="translate(232 230)">
+        <rect width="196" height="40" rx="20" fill="#FFFFFF"/>
+        <text x="98" y="26" font-size="16" font-weight="700" text-anchor="middle" fill="#1F5FC9">Light jacket</text>
+        <rect x="206" width="132" height="40" rx="20" fill="#FFFFFF"/>
+        <text x="272" y="26" font-size="16" font-weight="700" text-anchor="middle" fill="#1F5FC9">T-shirt</text>
+        <rect x="348" width="210" height="40" rx="20" fill="#1F5FC9">
+          <animate attributeName="opacity" values="1;0.75;1" dur="2.4s" repeatCount="indefinite"/>
+        </rect>
+        <text x="453" y="26" font-size="16" font-weight="700" text-anchor="middle" fill="#FFFFFF">Umbrella · 19:00</text>
+      </g>
+    </g>
+  </g>
+</svg>
