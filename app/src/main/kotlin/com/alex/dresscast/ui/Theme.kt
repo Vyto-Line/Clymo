@@ -130,3 +130,27 @@ object Ico {
         else -> rain
     }
 }
+
+/** Inter for text, Space Grotesk for big numbers and headings (Inter in Greek, which Space Grotesk lacks). */
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+object Fonts {
+    private fun inter(w: Int) = androidx.compose.ui.text.font.Font(
+        com.alex.dresscast.R.font.inter,
+        androidx.compose.ui.text.font.FontWeight(w),
+        variationSettings = androidx.compose.ui.text.font.FontVariation.Settings(
+            androidx.compose.ui.text.font.FontVariation.weight(w),
+        ),
+    )
+
+    private fun grotesk(w: Int) = androidx.compose.ui.text.font.Font(
+        com.alex.dresscast.R.font.space_grotesk,
+        androidx.compose.ui.text.font.FontWeight(w),
+        variationSettings = androidx.compose.ui.text.font.FontVariation.Settings(
+            androidx.compose.ui.text.font.FontVariation.weight(w),
+        ),
+    )
+
+    val body = androidx.compose.ui.text.font.FontFamily(inter(400), inter(500), inter(600), inter(700))
+    private val grotesque = androidx.compose.ui.text.font.FontFamily(grotesk(500), grotesk(700))
+    val display get() = if (com.alex.dresscast.L.greek) body else grotesque
+}

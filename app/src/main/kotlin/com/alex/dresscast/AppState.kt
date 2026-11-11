@@ -2,8 +2,10 @@ package com.alex.dresscast
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.alex.dresscast.L.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -16,25 +18,52 @@ class AppState(val ctx: Context) {
     val prefs = Prefs(ctx)
     var forecast by mutableStateOf<Forecast?>(null)
     var error by mutableStateOf<String?>(null)
+    /** Showing a saved forecast because the download failed; holds when it was saved. */
+    var offlineSince by mutableStateOf<Long?>(null)
     var loading by mutableStateOf(false)
+    var pulling by mutableStateOf(false)
     /** Messages about location / city search, shown in Settings and Setup. */
     var status by mutableStateOf<String?>(null)
+    var issues by mutableStateOf<List<Issue>>(emptyList())
+    /** Bumped when the language changes so every screen redraws. */
+    var langVersion by mutableIntStateOf(0)
 
     private val scope = MainScope()
     private var lastJson: JSONObject? = null
 
-    fun refresh() {
+    init {
+        L.use(prefs)
+        // Show the saved forecast straight away, then refresh.
+        Repo.cached(ctx)?.let { c ->
+            lastJson = c.json
+            forecast = runCatching { Advice.build(c.json, prefs) }.getOrNull()
+        }
+    }
+
+    fun refresh(byUser: Boolean = false) {
+        if (loading) return
         loading = true
+        pulling = byUser
+        issues = Reliability.issues(ctx)
         scope.launch {
             try {
                 val json = withContext(Dispatchers.IO) { Repo.fetchJson(ctx, prefs) }
                 lastJson = json
-                rebuild()
+                offlineSince = null
                 error = null
+                rebuild()
             } catch (e: Exception) {
-                error = e.message ?: "Network error"
+                val cached = withContext(Dispatchers.IO) { Repo.cached(ctx) }
+                if (cached != null) {
+                    lastJson = cached.json
+                    offlineSince = cached.fetchedAt
+                    rebuild()
+                } else {
+                    error = e.message ?: t("Network error", "Σφάλμα δικτύου")
+                }
             } finally {
                 loading = false
+                pulling = false
             }
         }
     }
@@ -42,14 +71,23 @@ class AppState(val ctx: Context) {
     /** Re-run the advice after a setting change, without downloading again. */
     fun rebuild() {
         val json = lastJson ?: return refresh()
-        forecast = runCatching { Advice.build(json, prefs.city, prefs.comfort, prefs.fahrenheit) }
-            .onFailure { error = it.message }
-            .getOrNull() ?: forecast
+        L.use(prefs)
+        val fc = runCatching { Advice.build(json, prefs) }.onFailure { error = it.message }.getOrNull() ?: return
+        forecast = fc
+        Scheduler.scheduleRain(ctx, fc)
+        Widget.updateAll(ctx, fc)
+    }
+
+    fun setLanguage(lang: String) {
+        prefs.lang = lang
+        L.use(prefs)
+        langVersion++
+        rebuild()
     }
 
     fun setCity(name: String) {
         if (name.isBlank()) return
-        status = "Searching…"
+        status = t("Searching…", "Αναζήτηση…")
         scope.launch {
             try {
                 val place = withContext(Dispatchers.IO) { Repo.geocode(name) }
@@ -60,16 +98,16 @@ class AppState(val ctx: Context) {
                 status = null
                 refresh()
             } catch (e: Exception) {
-                status = e.message ?: "Couldn't find that city"
+                status = e.message ?: t("Couldn't find that city", "Δεν βρέθηκε η πόλη")
             }
         }
     }
 
     fun locate() {
-        status = "Finding your location…"
+        status = t("Finding your location…", "Εύρεση τοποθεσίας…")
         Loc.current(ctx) { loc ->
             if (loc == null) {
-                status = "Couldn't get your location. Is location turned on?"
+                status = t("Couldn't get your location. Is location turned on?", "Δεν βρέθηκε η τοποθεσία. Είναι ενεργή η τοποθεσία;")
             } else {
                 scope.launch {
                     val name = withContext(Dispatchers.IO) { Loc.placeName(ctx, loc.latitude, loc.longitude) }
@@ -83,16 +121,12 @@ class AppState(val ctx: Context) {
 
     fun testNotification() {
         scope.launch {
-            try {
-                val fc = withContext(Dispatchers.IO) { Repo.load(ctx, prefs) }
-                Notifier.show(ctx, fc, 0)
-            } catch (e: Exception) {
-                Notifier.error(ctx, e.message ?: "network error")
-            }
+            val fc = withContext(Dispatchers.IO) { Repo.load(ctx, prefs) }
+            if (fc != null) Notifier.show(ctx, fc, 0) else Notifier.error(ctx, t("no internet", "χωρίς σύνδεση"))
         }
     }
 
-    // Ticked-off outfit items, remembered for today only.
+    // ---- Ticked-off outfit items, remembered for today only.
     fun checked(): Set<Int> =
         if (prefs.checkedDay == LocalDate.now().toString())
             prefs.checked.split(',').mapNotNull { it.toIntOrNull() }.toSet()
@@ -103,5 +137,20 @@ class AppState(val ctx: Context) {
         if (!now.add(i)) now.remove(i)
         prefs.checkedDay = LocalDate.now().toString()
         prefs.checked = now.joinToString(",")
+    }
+
+    // ---- "How was today's outfit?"
+    val askFeedback: Boolean get() = prefs.feedbackDay != LocalDate.now().toString()
+
+    /** -1 = too cold, 0 = just right, 1 = too warm. */
+    fun feedback(answer: Int) {
+        prefs.learn = (prefs.learn + answer * 0.75f).coerceIn(-3f, 3f)
+        prefs.feedbackDay = LocalDate.now().toString()
+        if (answer != 0) rebuild()
+    }
+
+    fun resetLearning() {
+        prefs.learn = 0f
+        rebuild()
     }
 }

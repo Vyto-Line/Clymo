@@ -1,1 +1,4 @@
-<resources><string name="app_name">DressCast</string></resources>
+<resources>
+    <string name="app_name">DressCast</string>
+    <string name="widget_desc">Today\'s weather and what to wear</string>
+</resources>

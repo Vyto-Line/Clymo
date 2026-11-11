@@ -51,4 +51,16 @@ class Prefs(context: Context) {
     var onboarded: Boolean by Pref("onboarded", false)
     var checkedDay: String by Pref("checkedDay", "")
     var checked: String by Pref("checked", "")
+    /** Learned from "too cold / too warm" answers, in °C. Negative = you feel colder. */
+    var learn: Float by Pref("learn", 0f)
+    var feedbackDay: String by Pref("feedbackDay", "")
+    /** The hours you're usually outside; advice only looks at these. */
+    var outFrom: Int by Pref("outFrom", 7)
+    var outTo: Int by Pref("outTo", 22)
+    var rainAlert: Boolean by Pref("rainAlert", true)
+    /** "System", "en" or "el". */
+    var lang: String by Pref("lang", "System")
+
+    /** How many degrees to add to the real temperature before choosing clothes. */
+    val shift: Double get() = comfort * 1.5 + learn
 }

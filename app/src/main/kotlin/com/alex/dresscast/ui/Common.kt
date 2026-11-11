@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alex.dresscast.AppState
 import com.alex.dresscast.Loc
+import com.alex.dresscast.L.t
 
 @Composable
 fun Card(pal: Pal, modifier: Modifier = Modifier, padding: Int = 16, content: @Composable ColumnScope.() -> Unit) {
@@ -101,13 +102,14 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, pal: Pal, onSelec
             Box(
                 Modifier
                     .weight(1f)
-                    .height(44.dp)
+                    .heightIn(min = 44.dp)
                     .clip(RoundedCornerShape(11.dp))
                     .background(if (on) pal.card else Color.Transparent)
-                    .selectable(selected = on, role = Role.RadioButton) { onSelect(value) },
+                    .selectable(selected = on, role = Role.RadioButton) { onSelect(value) }
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(label, color = if (on) pal.ink else pal.cardMuted, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, fontSize = 14.sp)
+                Text(label, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 17.sp, color = if (on) pal.ink else pal.cardMuted, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, fontSize = 14.sp)
             }
         }
     }
@@ -118,12 +120,12 @@ fun CityDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Type a city") },
+        title = { Text(t("Type a city", "Γράψε πόλη")) },
         text = {
-            OutlinedTextField(text, { text = it }, singleLine = true, placeholder = { Text("e.g. Thessaloniki") })
+            OutlinedTextField(text, { text = it }, singleLine = true, placeholder = { Text(t("e.g. Thessaloniki", "π.χ. Θεσσαλονίκη")) })
         },
-        confirmButton = { TextButton({ onSave(text); onDismiss() }) { Text("Save") } },
-        dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton({ onSave(text); onDismiss() }) { Text(t("Save", "Αποθήκευση")) } },
+        dismissButton = { TextButton(onDismiss) { Text(t("Cancel", "Άκυρο")) } },
     )
 }
 
@@ -131,7 +133,7 @@ fun CityDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
 @Composable
 fun rememberLocate(s: AppState): () -> Unit {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) s.locate() else s.status = "Location permission was refused. You can type a city instead."
+        if (ok) s.locate() else s.status = t("Location permission was refused. You can type a city instead.", "Δεν δόθηκε άδεια τοποθεσίας. Μπορείς να γράψεις μια πόλη.")
     }
     return {
         if (Loc.hasPerm(s.ctx)) s.locate()

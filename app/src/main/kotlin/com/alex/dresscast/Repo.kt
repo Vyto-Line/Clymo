@@ -2,16 +2,21 @@ package com.alex.dresscast
 
 import android.content.Context
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 
 data class Place(val name: String, val lat: Double, val lon: Double)
+data class Cached(val json: JSONObject, val fetchedAt: Long)
 
-/** Talks to Open-Meteo (free, no account or API key). Call from a background thread. */
+/** Talks to Open-Meteo (free, no account or API key) and keeps the last forecast for offline use. */
 object Repo {
 
+    private fun cacheFile(ctx: Context) = File(ctx.filesDir, "forecast.json")
+
+    /** Downloads a fresh forecast and saves it. Call from a background thread. */
     fun fetchJson(ctx: Context, p: Prefs = Prefs(ctx)): JSONObject {
         if (p.useGps) runCatching { Loc.updateFromLastKnown(ctx, p) }
         val url = String.format(
@@ -24,19 +29,31 @@ object Repo {
                 "&timezone=auto&forecast_days=7",
             p.lat, p.lon,
         )
-        return JSONObject(get(url))
+        val json = JSONObject(get(url))
+        runCatching {
+            cacheFile(ctx).writeText(JSONObject().put("fetchedAt", System.currentTimeMillis()).put("data", json).toString())
+        }
+        return json
     }
 
-    fun load(ctx: Context, p: Prefs = Prefs(ctx)): Forecast {
-        val json = fetchJson(ctx, p)
-        return Advice.build(json, p.city, p.comfort, p.fahrenheit)
+    /** The last saved forecast, if any. */
+    fun cached(ctx: Context): Cached? = runCatching {
+        val o = JSONObject(cacheFile(ctx).readText())
+        Cached(o.getJSONObject("data"), o.getLong("fetchedAt"))
+    }.getOrNull()
+
+    /** Fresh forecast if possible, otherwise the saved one. Null only if neither works. */
+    fun load(ctx: Context, p: Prefs = Prefs(ctx)): Forecast? {
+        L.use(p)
+        val json = runCatching { fetchJson(ctx, p) }.getOrNull() ?: cached(ctx)?.json ?: return null
+        return runCatching { Advice.build(json, p) }.getOrNull()
     }
 
     fun geocode(name: String): Place {
-        val url = "https://geocoding-api.open-meteo.com/v1/search?count=1&name=" +
-            URLEncoder.encode(name.trim(), "UTF-8")
+        val url = "https://geocoding-api.open-meteo.com/v1/search?count=1&language=" +
+            (if (L.greek) "el" else "en") + "&name=" + URLEncoder.encode(name.trim(), "UTF-8")
         val results = JSONObject(get(url)).optJSONArray("results")
-        if (results == null || results.length() == 0) throw Exception("City not found: $name")
+        if (results == null || results.length() == 0) throw Exception(L.t("City not found: $name", "Δεν βρέθηκε η πόλη: $name"))
         val r = results.getJSONObject(0)
         val country = r.optString("country", "")
         val label = r.getString("name") + if (country.isEmpty()) "" else ", $country"

@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        L.use(state.prefs)
         state.refresh()
     }
 }
@@ -76,8 +77,12 @@ fun App(s: AppState, activity: ComponentActivity) {
     val scheme = if (dark) darkColorScheme(primary = pal.accent, onPrimary = pal.onAccent, surface = pal.card)
     else lightColorScheme(primary = pal.accent, onPrimary = pal.onAccent, surface = pal.card)
 
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     MaterialTheme(colorScheme = scheme) {
-        var tab by rememberSaveable { mutableIntStateOf(0) }
+      androidx.compose.runtime.CompositionLocalProvider(
+          androidx.compose.material3.LocalTextStyle provides androidx.compose.ui.text.TextStyle(fontFamily = com.alex.dresscast.ui.Fonts.body),
+      ) {
+       androidx.compose.runtime.key(s.langVersion) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -99,5 +104,7 @@ fun App(s: AppState, activity: ComponentActivity) {
                 }
             }
         }
+       }
+      }
     }
 }

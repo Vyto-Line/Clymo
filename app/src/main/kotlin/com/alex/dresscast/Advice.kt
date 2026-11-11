@@ -1,5 +1,6 @@
 package com.alex.dresscast
 
+import com.alex.dresscast.L.t
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
@@ -18,9 +19,13 @@ data class DayAdvice(
     val tMax: Double,
     val feelMin: Double,
     val feelMax: Double,
-    val feelAt8: Double,
+    /** Feels-like temperature when you head out (your "from" hour). */
+    val feelStart: Double,
+    val startHour: Int,
     val rainPct: Int,
     val rainFrom: Int?,
+    /** Hours (while you're out) with a 50%+ chance of rain. */
+    val rainHours: List<Int>,
     val wind: Double,
     val uv: Double,
     val periods: List<Period>,
@@ -38,19 +43,27 @@ class Fmt(private val fahrenheit: Boolean) {
     fun t(c: Double): String = (if (fahrenheit) c * 9 / 5 + 32 else c).roundToInt().toString() + "°"
 }
 
+fun hh(h: Int) = "%02d:00".format(h)
+
 object Advice {
 
-    fun build(json: JSONObject, city: String, comfort: Int, fahrenheit: Boolean): Forecast {
+    fun build(json: JSONObject, p: Prefs): Forecast =
+        build(json, p.city, p.shift, p.outFrom, p.outTo, p.fahrenheit)
+
+    fun build(json: JSONObject, city: String, shift: Double, outFrom: Int, outTo: Int, fahrenheit: Boolean): Forecast {
         val h = json.getJSONObject("hourly")
         val d = json.getJSONObject("daily")
         val dates = d.getJSONArray("time")
+        val from = minOf(outFrom, outTo).coerceIn(0, 23)
+        val to = maxOf(outFrom, outTo).coerceIn(0, 23)
+        val today = LocalDate.now()
         val days = (0 until dates.length()).map { i ->
             day(i, LocalDate.parse(dates.getString(i)), d,
                 h.getJSONArray("apparent_temperature"),
                 h.getJSONArray("precipitation_probability"),
                 h.getJSONArray("weather_code"),
-                comfort, Fmt(fahrenheit))
-        }
+                shift, from, to, Fmt(fahrenheit))
+        }.filter { !it.date.isBefore(today) }   // an old saved forecast may start yesterday
         return Forecast(city, fahrenheit, days)
     }
 
@@ -60,7 +73,7 @@ object Advice {
     private fun day(
         i: Int, date: LocalDate, d: JSONObject,
         hFeel: JSONArray, hRain: JSONArray, hCode: JSONArray,
-        comfort: Int, f: Fmt,
+        shift: Double, from: Int, to: Int, f: Fmt,
     ): DayAdvice {
         fun dv(key: String, def: Double = 0.0) = d.getJSONArray(key).optDouble(i, def).let { if (it.isNaN()) def else it }
         val code = d.getJSONArray("weather_code").optInt(i, 0)
@@ -70,134 +83,139 @@ object Advice {
         val uv = dv("uv_index_max")
         val rainMm = dv("precipitation_sum")
 
-        // Daytime hours (07:00–22:00) decide the outfit, not the night.
+        // Only the hours you're outside count.
         val base = i * 24
-        val hours = (7..22).map { base + it }
-        val feels = hours.mapNotNull { hFeel.num(it) }
+        val outHours = (from..to).toList()
+        val feels = outHours.mapNotNull { hFeel.num(base + it) }
         val feelMin = feels.minOrNull() ?: dv("apparent_temperature_min", tMin)
         val feelMax = feels.maxOrNull() ?: dv("apparent_temperature_max", tMax)
-        val feelAt8 = hFeel.num(base + 8) ?: feelMin
-        val rainPct = hours.maxOfOrNull { hRain.int(it) } ?: 0
-        val worst = hours.maxOfOrNull { hCode.int(it) } ?: code
-        val rainFrom = (7..22).firstOrNull { hRain.int(base + it) >= 50 }
+        val feelStart = hFeel.num(base + from) ?: feelMin
+        val rainPct = outHours.maxOfOrNull { hRain.int(base + it) } ?: 0
+        val worst = outHours.maxOfOrNull { hCode.int(base + it) } ?: code
+        val rainHours = outHours.filter { hRain.int(base + it) >= 50 }
+        val rainFrom = rainHours.firstOrNull()
 
-        val periods = listOf("Morning" to 7..11, "Afternoon" to 12..17, "Evening" to 18..22).mapNotNull { (name, range) ->
-            val idx = range.map { base + it }
+        val ranges = listOf(7..11, 12..17, 18..22)
+        val names = listOf(t("Morning", "Πρωί"), t("Afternoon", "Απόγευμα"), t("Evening", "Βράδυ"))
+        val all = ranges.indices.mapNotNull { k ->
+            val idx = ranges[k].map { base + it }
             val fs = idx.mapNotNull { hFeel.num(it) }
             if (fs.isEmpty()) null
-            else Period(name, fs.average(), idx.maxOf { hRain.int(it) }, idx.maxOf { hCode.int(it) })
+            else ranges[k] to Period(names[k], fs.average(), idx.maxOf { hRain.int(it) }, idx.maxOf { hCode.int(it) })
         }
+        val periods = all.map { it.second }
+        // Parts of the day you're actually out in.
+        val outPeriods = all.filter { (r, _) -> r.first <= to && r.last >= from }.map { it.second }
 
-        // "I run cold" makes the day count as colder, so warmer clothes come sooner.
-        val shift = comfort * 1.5
         val aMin = feelMin + shift
         val aMax = feelMax + shift
         val avg = (aMin + aMax) / 2
+        val start = hh(from)
 
         val clothes = mutableListOf<Item>()
         when {
             avg < 0 -> {
-                clothes += Item("Warm coat", "Feels ${f.t(feelAt8)} at 8:00", Garment.Jacket)
-                clothes += Item("Sweater", "Stays under ${f.t(feelMax)}", Garment.Shirt)
-                clothes += Item("Scarf + gloves", "Freezing cold", Garment.Scarf)
+                clothes += Item(t("Warm coat", "Ζεστό παλτό"), t("Feels ${f.t(feelStart)} at $start", "Αίσθηση ${f.t(feelStart)} στις $start"), Garment.Jacket)
+                clothes += Item(t("Sweater", "Πουλόβερ"), t("Stays under ${f.t(feelMax)}", "Μένει κάτω από ${f.t(feelMax)}"), Garment.Shirt)
+                clothes += Item(t("Scarf + gloves", "Κασκόλ + γάντια"), t("Freezing cold", "Παγωνιά"), Garment.Scarf)
             }
             avg < 7 -> {
-                clothes += Item("Warm coat", "Feels ${f.t(feelAt8)} at 8:00", Garment.Jacket)
-                clothes += Item("Sweater", "Up to ${f.t(feelMax)}", Garment.Shirt)
+                clothes += Item(t("Warm coat", "Ζεστό παλτό"), t("Feels ${f.t(feelStart)} at $start", "Αίσθηση ${f.t(feelStart)} στις $start"), Garment.Jacket)
+                clothes += Item(t("Sweater", "Πουλόβερ"), t("Up to ${f.t(feelMax)}", "Έως ${f.t(feelMax)}"), Garment.Shirt)
             }
             avg < 13 -> {
-                clothes += Item("Jacket", "${f.t(feelAt8)} this morning", Garment.Jacket)
-                clothes += Item("Long sleeves", "Up to ${f.t(feelMax)}", Garment.Shirt)
+                clothes += Item(t("Jacket", "Μπουφάν"), t("${f.t(feelStart)} at $start", "${f.t(feelStart)} στις $start"), Garment.Jacket)
+                clothes += Item(t("Long sleeves", "Μακρυμάνικο"), t("Up to ${f.t(feelMax)}", "Έως ${f.t(feelMax)}"), Garment.Shirt)
             }
             avg < 18 -> {
-                clothes += Item("Light jacket", "${f.t(feelAt8)} this morning", Garment.Jacket)
-                clothes += if (aMax >= 18) Item("T-shirt", "${f.t(feelMax)} at its warmest", Garment.Shirt)
-                else Item("Long sleeves", "Up to ${f.t(feelMax)}", Garment.Shirt)
+                clothes += Item(t("Light jacket", "Ελαφρύ μπουφάν"), t("${f.t(feelStart)} at $start", "${f.t(feelStart)} στις $start"), Garment.Jacket)
+                clothes += if (aMax >= 18) Item(t("T-shirt", "Κοντομάνικο"), t("${f.t(feelMax)} at its warmest", "Έως ${f.t(feelMax)}"), Garment.Shirt)
+                else Item(t("Long sleeves", "Μακρυμάνικο"), t("Up to ${f.t(feelMax)}", "Έως ${f.t(feelMax)}"), Garment.Shirt)
             }
             avg < 24 -> {
-                if (aMin < 16) clothes += Item("Light jacket", "${f.t(feelAt8)} this morning", Garment.Jacket)
-                clothes += Item("T-shirt", "${f.t(feelMax)} at its warmest", Garment.Shirt)
+                if (aMin < 16) clothes += Item(t("Light jacket", "Ελαφρύ μπουφάν"), t("${f.t(feelStart)} at $start", "${f.t(feelStart)} στις $start"), Garment.Jacket)
+                clothes += Item(t("T-shirt", "Κοντομάνικο"), t("${f.t(feelMax)} at its warmest", "Έως ${f.t(feelMax)}"), Garment.Shirt)
             }
             avg < 29 -> {
-                clothes += Item("T-shirt", "Up to ${f.t(feelMax)}", Garment.Shirt)
-                clothes += Item("Shorts", "Warm all day", Garment.Shorts)
+                clothes += Item(t("T-shirt", "Κοντομάνικο"), t("Up to ${f.t(feelMax)}", "Έως ${f.t(feelMax)}"), Garment.Shirt)
+                clothes += Item(t("Shorts", "Σορτς"), t("Warm all day", "Ζέστη όλη μέρα"), Garment.Shorts)
             }
             else -> {
-                clothes += Item("Linen shirt", "${f.t(feelMax)} at its hottest", Garment.Shirt)
-                clothes += Item("Shorts", "Hot all day", Garment.Shorts)
+                clothes += Item(t("Linen shirt", "Λινό πουκάμισο"), t("${f.t(feelMax)} at its hottest", "Έως ${f.t(feelMax)}"), Garment.Shirt)
+                clothes += Item(t("Shorts", "Σορτς"), t("Hot all day", "Πολλή ζέστη όλη μέρα"), Garment.Shorts)
             }
         }
 
         val extras = mutableListOf<Item>()
         val snow = isSnow(worst)
-        val wetPeriods = periods.count { it.rain >= 50 }
+        val wetOut = outPeriods.count { it.rain >= 50 }
         if (snow) {
-            extras += Item("Boots", "Snow expected", Garment.Shoe)
+            extras += Item(t("Boots", "Μπότες"), t("Snow expected", "Αναμένεται χιόνι"), Garment.Shoe)
         } else if (rainFrom != null) {
-            if (periods.isNotEmpty() && wetPeriods == periods.size) {
-                extras += Item("Umbrella", "$rainPct% rain all day", Garment.Umbrella)
-                if (rainMm >= 3) extras += Item("Waterproof shoes", "${rainMm.roundToInt()} mm of rain", Garment.Shoe)
+            if (outPeriods.isNotEmpty() && wetOut == outPeriods.size) {
+                extras += Item(t("Umbrella", "Ομπρέλα"), t("$rainPct% rain all day", "$rainPct% βροχή όλη μέρα"), Garment.Umbrella)
+                if (rainMm >= 3) extras += Item(t("Waterproof shoes", "Αδιάβροχα παπούτσια"), t("${rainMm.roundToInt()} mm of rain", "${rainMm.roundToInt()} mm βροχής"), Garment.Shoe)
             } else {
-                extras += Item("Umbrella", "$rainPct% rain from " + "%02d:00".format(rainFrom), Garment.Umbrella)
+                extras += Item(t("Umbrella", "Ομπρέλα"), t("$rainPct% rain from ${hh(rainFrom)}", "$rainPct% βροχή από τις ${hh(rainFrom)}"), Garment.Umbrella)
             }
         } else if (rainPct >= 30) {
-            extras += Item("Small umbrella", "$rainPct% chance of rain", Garment.Umbrella)
+            extras += Item(t("Small umbrella", "Μικρή ομπρέλα"), t("$rainPct% chance of rain", "$rainPct% πιθανότητα βροχής"), Garment.Umbrella)
         }
         if (wind >= 35 && clothes.none { it.icon == Garment.Jacket }) {
-            extras += Item("Windproof layer", "Wind ${wind.roundToInt()} km/h", Garment.Jacket)
+            extras += Item(t("Windproof layer", "Αντιανεμικό"), t("Wind ${wind.roundToInt()} km/h", "Άνεμος ${wind.roundToInt()} km/h"), Garment.Jacket)
         }
-        if (uv >= 6) extras += Item("Cap + sunscreen", "UV ${uv.roundToInt()} at midday", Garment.Sun)
-        else if (uv >= 3 && avg >= 16) extras += Item("Sunglasses", "UV ${uv.roundToInt()} at midday", Garment.Glasses)
+        if (uv >= 6) extras += Item(t("Cap + sunscreen", "Καπέλο + αντηλιακό"), t("UV ${uv.roundToInt()} at midday", "UV ${uv.roundToInt()} το μεσημέρι"), Garment.Sun)
+        else if (uv >= 3 && avg >= 16) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), t("UV ${uv.roundToInt()} at midday", "UV ${uv.roundToInt()} το μεσημέρι"), Garment.Glasses)
 
         val keep = (4 - extras.size).coerceAtLeast(2)
         val items = (clothes.take(keep) + extras).take(4)
 
         val mood = when {
             snow || avg < 6 -> Mood.Cold
-            wetPeriods >= 2 || rainMm >= 5 -> Mood.Rainy
+            wetOut >= 2 || rainMm >= 5 -> Mood.Rainy
             aMax >= 28 -> Mood.Hot
             else -> Mood.Mild
         }
 
         val rainWhen = when {
             rainFrom == null -> null
-            rainFrom < 12 -> "in the morning"
-            rainFrom < 18 -> "in the afternoon"
-            else -> "in the evening"
+            rainFrom < 12 -> t("in the morning", "το πρωί")
+            rainFrom < 18 -> t("in the afternoon", "το απόγευμα")
+            else -> t("in the evening", "το βράδυ")
         }
         val sky = describe(code)
         val headline = when (mood) {
-            Mood.Rainy -> "Rain most of the day"
-            Mood.Cold -> if (snow) "Cold, with snow" else "Cold, ${sky.lowercase()}"
-            Mood.Hot -> "Hot, ${sky.lowercase()}"
+            Mood.Rainy -> t("Rain most of the day", "Βροχή σχεδόν όλη μέρα")
+            Mood.Cold -> if (snow) t("Cold, with snow", "Κρύο με χιόνι") else t("Cold", "Κρύο") + ", " + sky.lowercase(L.locale)
+            Mood.Hot -> t("Hot", "Ζέστη") + ", " + sky.lowercase(L.locale)
             Mood.Mild -> sky
-        } + if (mood != Mood.Rainy && !snow && rainWhen != null) ", rain $rainWhen" else ""
+        } + if (mood != Mood.Rainy && !snow && rainWhen != null) t(", rain ", ", βροχή ") + rainWhen else ""
 
         val sub = listOfNotNull(
-            "${f.t(feelAt8)} at 8:00",
-            "${f.t(feelMax)} at its warmest",
-            rainFrom?.let { "rain from %02d:00".format(it) },
-            if (wind >= 30) "windy" else null,
+            t("${f.t(feelStart)} at $start", "${f.t(feelStart)} στις $start"),
+            t("${f.t(feelMax)} at its warmest", "έως ${f.t(feelMax)}"),
+            rainFrom?.let { t("rain from ${hh(it)}", "βροχή από τις ${hh(it)}") },
+            if (wind >= 30) t("windy", "αέρας") else null,
         ).joinToString(" · ")
 
-        val tag = if (mood == Mood.Rainy) "Rain jacket" else clothes.first().name
+        val tag = if (mood == Mood.Rainy) t("Rain jacket", "Αδιάβροχο") else clothes.first().name
 
-        return DayAdvice(date, code, tMin, tMax, feelMin, feelMax, feelAt8, rainPct, rainFrom, wind, uv,
-            periods, mood, headline, sub, items, tag)
+        return DayAdvice(date, code, tMin, tMax, feelMin, feelMax, feelStart, from, rainPct, rainFrom, rainHours,
+            wind, uv, periods, mood, headline, sub, items, tag)
     }
 
     fun isSnow(c: Int) = c in 71..77 || c == 85 || c == 86
 
     fun describe(c: Int): String = when {
-        c == 0 -> "Clear"
-        c <= 2 -> "Partly cloudy"
-        c == 3 -> "Overcast"
-        c <= 48 -> "Foggy"
-        c <= 57 -> "Drizzle"
-        c <= 67 -> "Rain"
-        c <= 77 -> "Snow"
-        c <= 82 -> "Showers"
-        c <= 86 -> "Snow showers"
-        else -> "Thunderstorms"
+        c == 0 -> t("Clear", "Αίθριος")
+        c <= 2 -> t("Partly cloudy", "Λίγα σύννεφα")
+        c == 3 -> t("Overcast", "Συννεφιά")
+        c <= 48 -> t("Foggy", "Ομίχλη")
+        c <= 57 -> t("Drizzle", "Ψιχάλα")
+        c <= 67 -> t("Rain", "Βροχή")
+        c <= 77 -> t("Snow", "Χιόνι")
+        c <= 82 -> t("Showers", "Μπόρες")
+        c <= 86 -> t("Snow showers", "Χιονοπτώσεις")
+        else -> t("Thunderstorms", "Καταιγίδες")
     }
 }
