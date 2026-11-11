@@ -165,15 +165,20 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}) {
                 Column(Modifier.padding(start = 18.dp, top = 12.dp, end = 96.dp)) {
                     CountUp(day?.let { it.now ?: it.tMax }, f, pal.scene.ink)
                     if (day != null) Text(
-                        (if (day.now != null) t("Now · ", "Τώρα · ") else "") + t("High ${f.t(day.tMax)} · Low ${f.t(day.tMin)}", "Μέγ. ${f.t(day.tMax)} · Ελάχ. ${f.t(day.tMin)}"),
+                        listOfNotNull(
+                            day.feelNow?.let { t("Feels like ${f.t(it)}", "Αίσθηση ${f.t(it)}") },
+                            t("High ${f.t(day.tMax)}", "Μέγ. ${f.t(day.tMax)}"),
+                            t("Low ${f.t(day.tMin)}", "Ελάχ. ${f.t(day.tMin)}"),
+                        ).joinToString(" · "),
                         color = pal.scene.ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp),
                     )
                     Text(
                         day?.headline ?: if (s.error != null) t("Couldn't load the weather", "Δεν φόρτωσε ο καιρός") else t("Loading…", "Φόρτωση…"),
                         color = pal.scene.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 26.sp,
                     )
-                    Text(day?.sub ?: (s.error?.let { t("Check your internet connection.", "Έλεγξε τη σύνδεσή σου.") } ?: ""),
+                    if (day == null && s.error != null) Text(t("Check your internet connection.", "Έλεγξε τη σύνδεσή σου."),
                         color = pal.scene.ink, fontSize = 13.sp, lineHeight = 18.sp)
+                    else if (day != null && day.wind >= 30) Text(t("Windy today", "Αέρας σήμερα"), color = pal.scene.ink, fontSize = 13.sp)
                 }
             }
 

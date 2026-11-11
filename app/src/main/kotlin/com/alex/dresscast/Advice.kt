@@ -19,8 +19,9 @@ data class DayAdvice(
     val tMax: Double,
     val feelMin: Double,
     val feelMax: Double,
-    /** The real temperature right now (today only). */
+    /** The real temperature and feels-like right now (today only). */
     val now: Double?,
+    val feelNow: Double?,
     /** Feels-like temperature when you head out (your "from" hour). */
     val feelStart: Double,
     val startHour: Int,
@@ -98,7 +99,12 @@ object Advice {
         val feelMin = feels.minOrNull() ?: dv("apparent_temperature_min", tMin)
         val feelMax = feels.maxOrNull() ?: dv("apparent_temperature_max", tMax)
         val feelStart = hFeel.num(base + from) ?: feelMin
-        val now = if (date == LocalDate.now()) hTemp.num(base + java.time.LocalTime.now().hour) else null
+        val isToday = date == LocalDate.now()
+        val nowHour = java.time.LocalTime.now().hour
+        val now = if (isToday) hTemp.num(base + nowHour) else null
+        val feelNow = if (isToday) hFeel.num(base + nowHour) else null
+        val codeNow = if (isToday) hCode.int(base + nowHour) else code
+        val rainAhead = isToday && rainHours.any { it > nowHour }
         val peakHour = outHours.maxByOrNull { hFeel.num(base + it) ?: -999.0 } ?: from
         val feelEnd = hFeel.num(base + to) ?: feelMin
         val peak = hh(peakHour)
@@ -206,24 +212,26 @@ object Advice {
             rainFrom < 18 -> t("in the afternoon", "το απόγευμα")
             else -> t("in the evening", "το βράδυ")
         }
-        val sky = describe(code)
+        // Today: describe the sky right now, and only mention rain if it's still to come.
+        val sky = describe(if (isToday) codeNow else code)
+        val rainLater = if (isToday) rainAhead else rainWhen != null
         val headline = when (mood) {
-            Mood.Rainy -> t("Rain most of the day", "Βροχή σχεδόν όλη μέρα")
+            Mood.Rainy -> if (isToday && !rainAhead) sky else t("Rain most of the day", "Βροχή σχεδόν όλη μέρα")
             Mood.Cold -> if (snow) t("Cold, with snow", "Κρύο με χιόνι") else t("Cold", "Κρύο") + ", " + sky.lowercase(L.locale)
             Mood.Hot -> t("Hot", "Ζέστη") + ", " + sky.lowercase(L.locale)
             Mood.Mild -> sky
-        } + if (mood != Mood.Rainy && !snow && rainWhen != null) t(", rain ", ", βροχή ") + rainWhen else ""
+        } + if (mood != Mood.Rainy && !snow && rainLater) t(", rain later", ", βροχή αργότερα") else ""
 
+        // The summary line is about right now.
         val sub = listOfNotNull(
-            t("Feels ${f.t(feelStart)} at $start", "Αίσθηση ${f.t(feelStart)} στις $start"),
-            t("${f.t(feelMax)} at $peak", "${f.t(feelMax)} στις $peak"),
-            rainFrom?.let { t("rain from ${hh(it)}", "βροχή από τις ${hh(it)}") },
+            feelNow?.let { t("Feels like ${f.t(it)} now", "Αίσθηση ${f.t(it)} τώρα") }
+                ?: t("Feels like ${f.t(feelStart)} in the morning", "Αίσθηση ${f.t(feelStart)} το πρωί"),
             if (wind >= 30) t("windy", "αέρας") else null,
         ).joinToString(" · ")
 
         val tag = if (mood == Mood.Rainy) t("Rain jacket", "Αδιάβροχο") else clothes.first().name
 
-        return DayAdvice(date, code, tMin, tMax, feelMin, feelMax, now, feelStart, from, peakHour, feelEnd, to, rainPct, rainFrom, rainHours,
+        return DayAdvice(date, code, tMin, tMax, feelMin, feelMax, now, feelNow, feelStart, from, peakHour, feelEnd, to, rainPct, rainFrom, rainHours,
             wind, uv, periods, mood, headline, sub, items, tag)
     }
 

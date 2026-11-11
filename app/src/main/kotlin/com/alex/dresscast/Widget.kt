@@ -195,7 +195,8 @@ object Widget {
 
         v.text(R.id.w_temp, f.t(d.now ?: d.tMax), if (big) w.sceneInk else w.ink)
         v.text(R.id.w_headline, d.headline, if (big) w.sceneInk else w.ink)
-        v.text(R.id.w_city, fc.city.substringBefore(",") + " · " + t("High ${f.t(d.tMax)} at ${hh(d.peakHour)}", "Μέγ. ${f.t(d.tMax)} στις ${hh(d.peakHour)}"), w.muted)
+        v.text(R.id.w_city, fc.city.substringBefore(",") + " · " + (d.feelNow?.let { t("Feels like ${f.t(it)}", "Αίσθηση ${f.t(it)}") }
+            ?: t("High ${f.t(d.tMax)}", "Μέγ. ${f.t(d.tMax)}")), w.muted)
         v.setImageViewResource(R.id.w_icon, weatherIcon(d.code))
         v.tint(R.id.w_icon, w.ink)
 
@@ -204,7 +205,7 @@ object Widget {
         v.tint(R.id.w_item1_icon, w.accent)
         v.text(R.id.w_item1, if (layout == R.layout.w_2x1) d.items.take(2).joinToString(" + ") { it.name } else first.name, w.ink)
         v.text(R.id.w_note,
-            if (layout == R.layout.w_1x2) t("${f.t(d.feelStart)} at ${d.startHour}", "${f.t(d.feelStart)} στις ${d.startHour}")
+            if (layout == R.layout.w_1x2) (d.feelNow?.let { t("feels ${f.t(it)}", "αίσθ. ${f.t(it)}") } ?: "")
             else d.rainFrom?.let { t("Rain from ${hh(it)} · ${d.rainPct}%", "Βροχή από ${hh(it)} · ${d.rainPct}%") } ?: d.items.drop(1).firstOrNull()?.name ?: "",
             w.muted)
 

@@ -108,14 +108,13 @@ fun DetailsScreen(s: AppState, pal: Pal, onBack: () -> Unit) {
         ) {
             WeatherScene(day.mood, pal.scene, Modifier.fillMaxSize(), storm = day.code >= 95)
             Column(Modifier.padding(start = 18.dp, top = 14.dp, end = 110.dp)) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(f.t(day.tMax), color = pal.scene.ink, fontSize = 44.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 46.sp)
-                    Text(" / " + f.t(day.tMin), color = pal.scene.ink, fontSize = 20.sp, fontFamily = Fonts.display, modifier = Modifier.padding(bottom = 6.dp))
-                }
+                Text(f.t(day.now ?: day.tMax), color = pal.scene.ink, fontSize = 44.sp, fontWeight = FontWeight.Bold, fontFamily = Fonts.display, lineHeight = 46.sp)
                 Text(day.headline, color = pal.scene.ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text(
-                    t("Feels like ${f.t(day.feelStart)} at ${hh(day.startHour)}, ${f.t(day.feelMax)} at ${hh(day.peakHour)}, ${f.t(day.feelEnd)} by ${hh(day.endHour)}",
-                        "Αίσθηση ${f.t(day.feelStart)} στις ${hh(day.startHour)}, ${f.t(day.feelMax)} στις ${hh(day.peakHour)}, ${f.t(day.feelEnd)} στις ${hh(day.endHour)}"),
+                    listOfNotNull(
+                        day.feelNow?.let { t("Feels like ${f.t(it)} now", "Αίσθηση ${f.t(it)} τώρα") },
+                        t("High ${f.t(day.tMax)} · Low ${f.t(day.tMin)}", "Μέγ. ${f.t(day.tMax)} · Ελάχ. ${f.t(day.tMin)}"),
+                    ).joinToString(" · "),
                     color = pal.scene.ink, fontSize = 13.sp, lineHeight = 17.sp)
             }
         }
