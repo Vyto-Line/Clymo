@@ -2,4 +2,25 @@
     <string name="widget_desc">Ο καιρός σήμερα και τι να φορέσεις. Άλλαξέ του μέγεθος από μικρό τετράγωνο σε μεγάλο πάνελ.</string>
     <string name="widget_check_desc">Το σημερινό ντύσιμο ως λίστα για τσεκάρισμα</string>
     <string name="widget_week_desc">Οι επόμενες πέντε μέρες και τι να φορέσεις</string>
+    <string name="p_headline">Λίγα σύννεφα, βροχή το βράδυ</string>
+    <string name="p_city">Αθήνα · 12° στις 07:00</string>
+    <string name="p_jacket">Ελαφρύ μπουφάν</string>
+    <string name="p_tshirt">Κοντομάνικο</string>
+    <string name="p_umbrella">Ομπρέλα</string>
+    <string name="p_umbrella_time">Ομπρέλα · 19:00</string>
+    <string name="p_morning">Πρωί</string>
+    <string name="p_afternoon">Απόγευμα</string>
+    <string name="p_evening">Βράδυ</string>
+    <string name="p_today_wear">Σήμερα φόρεσε</string>
+    <string name="p_count">1 από 3</string>
+    <string name="p_rain_from">Βροχή από 19:00</string>
+    <string name="p_rainjacket">Αδιάβροχο</string>
+    <string name="p_sweater">Πουλόβερ</string>
+    <string name="p_coat">Ζεστό παλτό</string>
+    <string name="p_d1">Πέμ</string>
+    <string name="p_d2">Παρ</string>
+    <string name="p_d3">Σάβ</string>
+    <string name="p_d4">Κυρ</string>
+    <string name="p_d5">Δευ</string>
+    <string name="p_loading">Φόρτωση καιρού…</string>
 </resources>

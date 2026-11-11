@@ -3,4 +3,25 @@
     <string name="widget_desc">Today\'s weather and what to wear. Resize it from a single tile to a big panel.</string>
     <string name="widget_check_desc">Today\'s outfit as a checklist you can tick off</string>
     <string name="widget_week_desc">The next five days and what to wear</string>
+    <string name="p_headline">Partly cloudy, rain in the evening</string>
+    <string name="p_city">Athens · 12° at 07:00</string>
+    <string name="p_jacket">Light jacket</string>
+    <string name="p_tshirt">T-shirt</string>
+    <string name="p_umbrella">Umbrella</string>
+    <string name="p_umbrella_time">Umbrella · 19:00</string>
+    <string name="p_morning">Morning</string>
+    <string name="p_afternoon">Afternoon</string>
+    <string name="p_evening">Evening</string>
+    <string name="p_today_wear">Today, wear</string>
+    <string name="p_count">1 of 3</string>
+    <string name="p_rain_from">Rain from 19:00</string>
+    <string name="p_rainjacket">Rain jacket</string>
+    <string name="p_sweater">Sweater</string>
+    <string name="p_coat">Warm coat</string>
+    <string name="p_d1">Thu</string>
+    <string name="p_d2">Fri</string>
+    <string name="p_d3">Sat</string>
+    <string name="p_d4">Sun</string>
+    <string name="p_d5">Mon</string>
+    <string name="p_loading">Loading the weather…</string>
 </resources>
