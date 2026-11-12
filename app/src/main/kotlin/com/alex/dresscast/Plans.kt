@@ -56,7 +56,8 @@ object PlanStore {
 }
 
 /** A calendar on the phone (Samsung Calendar, Google, Outlook… all live in Android's shared calendar store). */
-data class PhoneCalendar(val id: Long, val name: String, val account: String, val color: Int)
+/** account: where it's stored (Google account, Samsung account, this phone…); accountName: usually an email address. */
+data class PhoneCalendar(val id: Long, val name: String, val account: String, val color: Int, val accountName: String = "")
 
 /** Something on your schedule: one of your own plans or a calendar event. */
 data class PlanItem(
@@ -75,11 +76,12 @@ data class PlanItem(
 object Calendars {
     fun hasPerm(ctx: Context) = ctx.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
 
+    /** Samsung Calendar is only the app: the calendars it shows live in your accounts, most often Google. */
     private fun accountLabel(type: String, name: String): String = when {
-        type.contains("osp") || type.contains("samsung", true) || type == "LOCAL" || name.equals("My calendar", true) ->
-            "Samsung Calendar"
-        type == "com.google" -> "Google"
-        type.contains("outlook", true) || type.contains("exchange", true) || type.contains("microsoft", true) -> "Outlook"
+        type == "LOCAL" || type.contains("local", true) || name.equals("My calendar", true) -> t("On this phone", "Μόνο στη συσκευή")
+        type.contains("osp") || type.contains("samsung", true) -> t("Samsung account", "Λογαριασμός Samsung")
+        type == "com.google" -> t("Google account", "Λογαριασμός Google")
+        type.contains("outlook", true) || type.contains("exchange", true) || type.contains("microsoft", true) -> t("Outlook account", "Λογαριασμός Outlook")
         else -> name
     }
 
@@ -94,7 +96,8 @@ object Calendars {
                 "${CalendarContract.Calendars.VISIBLE} = 1", null, null,
             )?.use { c ->
                 while (c.moveToNext()) {
-                    out += PhoneCalendar(c.getLong(0), c.getString(1) ?: "", accountLabel(c.getString(3) ?: "", c.getString(2) ?: ""), c.getInt(4))
+                    out += PhoneCalendar(c.getLong(0), c.getString(1) ?: "", accountLabel(c.getString(3) ?: "", c.getString(2) ?: ""), c.getInt(4),
+                        c.getString(2) ?: "")
                 }
             }
         }
@@ -138,7 +141,7 @@ object Calendars {
                         key = "cal-${c.getLong(0)}-${c.getLong(2)}", title = title.ifBlank { t("Event", "Εκδήλωση") },
                         date = b.toLocalDate(), start = b.toLocalTime(), end = if (e.toLocalDate() == b.toLocalDate()) e.toLocalTime() else LocalTime.of(23, 59),
                         where = if (location.isBlank() || isOnline) "in" else "out",
-                        source = cals[calId]?.account ?: t("Calendar", "Ημερολόγιο"), color = c.getInt(7), location = location,
+                        source = t("Calendar", "Ημερολόγιο"), color = c.getInt(7), location = location,
                     )
                 }
             }

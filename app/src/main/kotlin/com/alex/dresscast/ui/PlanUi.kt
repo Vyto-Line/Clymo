@@ -178,11 +178,11 @@ private fun PlanRow(item: PlanItem, tip: PlanTip?, past: Boolean, pal: Pal, onCl
             .clickable(enabled = item.plan != null, role = Role.Button, onClick = onClick)
             .padding(vertical = 10.dp),
     ) {
-        Column(Modifier.width(54.dp)) {
+        Column(Modifier.width(62.dp)) {
             Text(hm(item.start), color = pal.ink.copy(alpha = alpha), fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                 Box(Modifier.size(7.dp).clip(CircleShape).background(Color(item.color)))
-                Text(" " + item.source.substringBefore(' '), color = pal.cardMuted, fontSize = 10.sp, maxLines = 1)
+                Text(" " + item.source, color = pal.cardMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Column(Modifier.weight(1f)) {
@@ -371,8 +371,8 @@ fun CalendarsCard(s: AppState, pal: Pal, onAskPermission: () -> Unit) {
             })
         }
         Text(
-            t("Works with every calendar on your phone: Samsung Calendar, Google, Outlook and more. They're read only on your device and never sent anywhere.",
-                "Δουλεύει με όλα τα ημερολόγια του κινητού: Samsung Calendar, Google, Outlook και άλλα. Τα διαβάζουμε μόνο στη συσκευή σου, δεν στέλνονται πουθενά."),
+            t("Works with every calendar you see in Samsung Calendar or Google Calendar. Events you add in Samsung Calendar are usually saved to your Google account, so they appear under it below. They're read only on your device and never sent anywhere.",
+                "Δουλεύει με όλα τα ημερολόγια που βλέπεις στο Samsung Calendar ή στο Google Calendar. Ό,τι προσθέτεις στο Samsung Calendar συνήθως αποθηκεύεται στον λογαριασμό σου Google, γι' αυτό εμφανίζεται εκεί παρακάτω. Τα διαβάζουμε μόνο στη συσκευή σου, δεν στέλνονται πουθενά."),
             color = pal.cardMuted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp),
         )
         if (p.calOn && s.calendars.isNotEmpty()) {
@@ -383,7 +383,8 @@ fun CalendarsCard(s: AppState, pal: Pal, onAskPermission: () -> Unit) {
                     Box(Modifier.size(12.dp).clip(CircleShape).background(Color(c.color)))
                     Column(Modifier.weight(1f).padding(start = 12.dp)) {
                         Text(c.name, color = pal.ink, fontSize = 15.sp)
-                        Text(c.account + if (c.account == "Samsung Calendar") t(" · On this phone", " · Στη συσκευή") else "", color = pal.cardMuted, fontSize = 12.sp)
+                        Text(c.account + (if (c.accountName.isNotBlank() && c.accountName != c.name && "@" in c.accountName) " · " + c.accountName else ""),
+                            color = pal.cardMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Switch(c.id !in off, { on ->
                         p.calOff = (if (on) off - c.id else off + c.id).joinToString(",")
