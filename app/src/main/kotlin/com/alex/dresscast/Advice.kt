@@ -7,7 +7,7 @@ import java.time.LocalDate
 import kotlin.math.roundToInt
 
 enum class Mood { Mild, Hot, Rainy, Cold }
-enum class Garment { Jacket, Shirt, Umbrella, Glasses, Sun, Shorts, Shoe, Scarf }
+enum class Garment { Jacket, Shirt, Umbrella, Glasses, Sun, Shorts, Shoe, Scarf, Pants }
 
 /** kind: the wardrobe key (see Wardrobe), used for illustrations and alternatives. */
 data class Item(val name: String, val why: String, val icon: Garment, val kind: String = "")
@@ -159,6 +159,12 @@ object Advice {
         val hoodie = "hoodie" to t("Hoodie", "Φούτερ")
         val longs = "longsleeve" to t("Long sleeves", "Μακρυμάνικο")
         val tee = "tshirt" to t("T-shirt", "Κοντομάνικο")
+        val jeans = "jeans" to t("Jeans", "Τζιν")
+        val trousers = "trousers" to t("Trousers", "Παντελόνι")
+        val linen = "linen" to t("Light trousers", "Λινό παντελόνι")
+        val shorts = "shorts" to t("Shorts", "Σορτς")
+        val coldLegs = t("Too cold for shorts", "Κρύο για κοντά")
+        val coolLegs = t("Cool for shorts", "Δροσερά για κοντά")
 
         val clothes = mutableListOf<Item>()
         fun add(item: Item?) { if (item != null) clothes += item }
@@ -172,31 +178,36 @@ object Advice {
                     warmBits.take(2).joinToString(" + ") { it.second }.replaceFirstChar { it.uppercase(L.locale) },
                     t("Freezing cold", "Παγωνιά"), Garment.Scarf, warmBits.first().first,
                 )
+                add(pick(coldLegs, Garment.Pants, jeans, trousers))
                 if (has("thermal")) clothes += Item(t("Thermal layer", "Ισοθερμικό"), t("Below zero", "Κάτω από το μηδέν"), Garment.Shirt, "thermal")
             }
             avg < 7 -> {
                 add(pick(jacketWhy, Garment.Jacket, coat, winter))
                 add(pick(warm, Garment.Shirt, sweater, hoodie, longs))
+                add(pick(coldLegs, Garment.Pants, jeans, trousers))
             }
             avg < 13 -> {
                 add(pick(jacketWhy, Garment.Jacket, jacket, coat, light))
                 add(pick(warm, Garment.Shirt, longs, hoodie, sweater))
+                add(pick(coldLegs, Garment.Pants, jeans, trousers))
             }
             avg < 18 -> {
                 add(pick(jacketWhy, Garment.Jacket, light, cardigan, windbreaker, jacket))
                 add(if (aMax >= 18) pick(shirtWhy, Garment.Shirt, tee, longs) else pick(warm, Garment.Shirt, longs, hoodie, tee))
+                add(pick(coolLegs, Garment.Pants, jeans, trousers, linen))
             }
             avg < 24 -> {
                 if (aMin < 16) add(pick(jacketWhy, Garment.Jacket, light, cardigan, windbreaker))
                 add(pick(shirtWhy, Garment.Shirt, tee, longs))
+                add(pick(coolLegs, Garment.Pants, trousers, jeans, linen))
             }
             avg < 29 -> {
                 add(pick(warm, Garment.Shirt, tee))
-                add(pick(t("Warm all day", "Ζέστη όλη μέρα"), Garment.Shorts, "shorts" to t("Shorts", "Σορτς")))
+                add(pick(t("Warm all day", "Ζέστη όλη μέρα"), Garment.Shorts, shorts) ?: pick(t("Warm all day", "Ζέστη όλη μέρα"), Garment.Pants, linen, trousers))
             }
             else -> {
                 add(pick(shirtWhy, Garment.Shirt, "tshirt" to t("Linen shirt", "Λινό πουκάμισο")))
-                add(pick(t("Hot all day", "Πολλή ζέστη όλη μέρα"), Garment.Shorts, "shorts" to t("Shorts", "Σορτς")))
+                add(pick(t("Hot all day", "Πολλή ζέστη όλη μέρα"), Garment.Shorts, shorts) ?: pick(t("Hot all day", "Πολλή ζέστη όλη μέρα"), Garment.Pants, linen))
             }
         }
 

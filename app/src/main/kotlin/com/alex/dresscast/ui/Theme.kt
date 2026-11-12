@@ -102,6 +102,7 @@ object Ico {
     val glasses = make("glasses", circle(7f, 14f, 3.5f), circle(17f, 14f, 3.5f), "M10.5 14h3M3.5 14L5 7M20.5 14L19 7")
     val sun = make("sun", circle(12f, 12f, 4f), "M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4")
     val shorts = make("shorts", "M6 4h12l2 15h-6l-2-8-2 8H4z")
+    val pants = make("pants", "M7 3h10l1 18h-4l-2-12-2 12H6z")
     val shoe = make("shoe", "M3 18h18v-3l-6-1.5L12 9 9 10.5 3 9z")
     val scarf = make("scarf", "M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7")
     val cloudSun = make("cloudSun", "M8 4v1M3.5 8.5h1M4.8 5.3l.7.7M11.2 5.3l-.7.7", "M5.6 10.4A3 3 0 0 1 10.9 8",
@@ -136,6 +137,7 @@ object Ico {
         Garment.Glasses -> glasses
         Garment.Sun -> sun
         Garment.Shorts -> shorts
+        Garment.Pants -> pants
         Garment.Shoe -> shoe
         Garment.Scarf -> scarf
     }

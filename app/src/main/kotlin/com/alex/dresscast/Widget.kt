@@ -165,6 +165,7 @@ object Widget {
         Garment.Glasses -> R.drawable.ic_g_glasses
         Garment.Sun -> R.drawable.ic_g_sun
         Garment.Shorts -> R.drawable.ic_g_shorts
+        Garment.Pants -> R.drawable.ic_g_pants
         Garment.Shoe -> R.drawable.ic_g_shoe
         Garment.Scarf -> R.drawable.ic_g_scarf
     }
