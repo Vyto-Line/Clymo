@@ -20,28 +20,37 @@ At the time you choose, it sends a notification like **"Light jacket + umbrella 
 ## Features
 
 **Every morning**
-- A notification at the time you pick, with the outfit and the day's weather
+- A notification at the time you pick, with the outfit, the day's weather and the day's best tip
 - An optional 21:00 preview of tomorrow's outfit
 - A warning about an hour before rain starts, while you're out
 - **Official weather warnings** (yellow, orange, red) from your national weather service, via MeteoAlarm
 - A heads-up when the **pollen** you're allergic to is high
+- A **sunscreen reminder**, only on strong-UV days (UV 6+) and only if you'll be outside
 
 **In the app**
-- Animated weather picture with the temperature and a one-line summary
-- Outfit cards you can tick off, plus morning, afternoon and evening at a glance
+- Animated weather picture with the temperature, and today's outfit drawn as little illustrations you tick off as you get dressed
 - Tap the picture for **Today in detail**: an hour-by-hour chart (tap any hour to see its weather), why each item was chosen, wind, UV, humidity, sunrise and sunset, rain and air quality, and a comparison with yesterday
-- **Your plans for the day**: add plans (one-off or repeating, outside, inside or a commute) and see the weather during each one and what to take, with a reminder 30 minutes before you leave
-- **Linked calendars**: Samsung Calendar, Google, Outlook or any calendar on your phone, read only on the device
-- **Pollen** for olive, grass, birch, ragweed, mugwort and alder (Europe)
+- **Good day for…** tips that appear only when they apply: hanging out the laundry, the beach (sea temperature and waves), airing the house, or skipping the car wash because rain or Saharan dust is coming
+- **Your plans for the day**: one-off or repeating, outside, inside or a commute, with the weather during each one and what to take, and a reminder 30 minutes before you leave
+- **Activities**: mark a plan as running, cycling, a walk or a dog walk, and it dresses you for how warm you'll feel once you're moving
+- **Linked calendars**: everything you see in Samsung Calendar or Google Calendar (Google, Samsung and Outlook accounts), read only on the device
+- **Trip packing list**: pick a city and dates and get a list from the forecast there, with quantities, using only your own clothes; tick items off, share it, and get a reminder the evening before
+- **Share today's outfit** as a picture, with the weather on top and the clothes illustrated below (weather, light or dark style)
 - **Week ahead** with what to wear each day
 - Automatic location or search for a city, with saved places
-- Light and dark mode, English and Greek, °C and °F
+- Light and dark mode, colours from your wallpaper (Material You) and a themed icon, English and Greek, °C and °F
+
+<p align="center">
+  <img src="docs/wardrobe.svg" alt="Illustrations of the clothes Clymo can suggest: T-shirt, sweater, jeans, jackets, coat, shoes, umbrella, cap, sunglasses, beanie, sunscreen" width="100%">
+</p>
 
 **Advice that fits you**
+- **My wardrobe**: tick the clothes you own (outerwear, tops, trousers, shoes, accessories) and Clymo only suggests those, finding the next best thing when something is missing
 - Tell it whether you usually feel colder or warmer than other people
 - Answer "too cold / just right / too warm" and it adjusts over time
+- **Outfit diary**: every answer is saved with what you wore, and it shows you what works, like "At 12–14° with a cardigan you felt just right 4 out of 5 times"
 - Set the hours you're usually outside (with different weekend hours if you like), so evening rain only counts if you're still out
-- Turn off accessories you can't or don't want to wear (like sunglasses or an umbrella), and it suggests an alternative
+- **Family**: add a child or partner with their own feel for the cold, hours outside, wardrobe and morning reminder, and switch between them on Today
 
 **Built to be dependable**
 - Works offline with the last forecast
@@ -78,14 +87,15 @@ After that, updates arrive inside the app. The first time, Android asks you to a
 
 ## How the advice works
 
-Clymo looks at the **feels-like** temperature during the hours you're outside, not just the daily high. It shifts that by your own comfort setting and what it has learned from your feedback, picks the clothing for that range, and then adds what the day needs: an umbrella when rain is likely while you're out, sunglasses or sunscreen for strong UV, a windproof layer on windy days, boots for snow.
+Clymo looks at the **feels-like** temperature during the hours you're outside, not just the daily high. It shifts that by your own comfort setting and what it has learned from your feedback, picks clothing for that range from your own wardrobe (a top, trousers and a layer if needed), and then adds what the day needs: an umbrella when rain is likely while you're out, sunglasses or sunscreen for strong UV, a windproof layer on windy days, boots for snow.
 
 ## Privacy
 
 - No account, no ads, no analytics.
 - Your location is only used to get the forecast, at city level (coarse location), and only if you choose "Use my location".
 - Calendars are read only on your phone, and only if you link them. Event details are never sent anywhere.
-- Weather comes from [Open-Meteo](https://open-meteo.com), warnings from [MeteoAlarm](https://meteoalarm.org), and updates are checked against this GitHub page. Nothing else leaves your phone.
+- Your wardrobe, plans, trips, family profiles and outfit diary stay on your phone.
+- Weather, air quality, pollen and sea conditions come from [Open-Meteo](https://open-meteo.com), warnings from [MeteoAlarm](https://meteoalarm.org), and updates are checked against this GitHub page. Nothing else leaves your phone.
 
 ## Build it yourself
 
