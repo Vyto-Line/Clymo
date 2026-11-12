@@ -74,33 +74,7 @@ fun WardrobeScreen(s: AppState, pal: Pal, onBack: () -> Unit) {
                 "Σημείωσε τι έχεις. Το Clymo προτείνει μόνο αυτά, και βρίσκει εναλλακτική όταν κάτι λείπει."),
             color = pal.muted, fontSize = 14.sp, lineHeight = 20.sp,
         )
-        Card(pal) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Wardrobe.groups.forEach { g ->
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(g.name.uppercase(com.alex.dresscast.L.locale), color = pal.cardMuted, fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            g.pieces.forEach { piece ->
-                                val on = piece.key !in off
-                                Row(
-                                    Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(20.dp))
-                                        .background(if (on) pal.tint else Color.Transparent)
-                                        .border(1.5.dp, if (on) pal.accent else pal.track, RoundedCornerShape(20.dp))
-                                        .toggleable(on, role = Role.Checkbox) { Wardrobe.toggle(p, piece.key); s.rebuild() }
-                                        .padding(horizontal = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (on) Icon(Ico.check, null, Modifier.size(14.dp), tint = pal.accent)
-                                    Text((if (on) " " else "") + piece.name, color = if (on) pal.accent else pal.cardMuted, fontSize = 14.sp,
-                                        fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        Card(pal) { WardrobeChips(off, pal) { Wardrobe.toggle(p, it); s.rebuild() } }
         // A live example of how the alternatives work, based on what's missing.
         val example = when {
             "coat" in off && "winterjacket" !in off -> t("Without a wool coat, on cold days you'll see: Winter jacket + sweater.",
@@ -120,6 +94,37 @@ fun WardrobeScreen(s: AppState, pal: Pal, onBack: () -> Unit) {
         ) {
             Icon(Ico.jacket, null, Modifier.size(22.dp), tint = pal.accent)
             Text(example, color = pal.ink, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(start = 12.dp))
+        }
+    }
+}
+
+/** The wardrobe as tappable chips in groups; [off] holds the keys you don't have. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun WardrobeChips(off: Set<String>, pal: Pal, onToggle: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Wardrobe.groups.forEach { g ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(g.name.uppercase(com.alex.dresscast.L.locale), color = pal.cardMuted, fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    g.pieces.forEach { piece ->
+                        val on = piece.key !in off
+                        Row(
+                            Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(20.dp))
+                                .background(if (on) pal.tint else Color.Transparent)
+                                .border(1.5.dp, if (on) pal.accent else pal.track, RoundedCornerShape(20.dp))
+                                .toggleable(on, role = Role.Checkbox) { onToggle(piece.key) }
+                                .padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (on) Icon(Ico.check, null, Modifier.size(14.dp), tint = pal.accent)
+                            Text((if (on) " " else "") + piece.name, color = if (on) pal.accent else pal.cardMuted, fontSize = 14.sp,
+                                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal)
+                        }
+                    }
+                }
+            }
         }
     }
 }

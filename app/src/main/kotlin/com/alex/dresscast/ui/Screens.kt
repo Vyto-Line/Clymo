@@ -114,7 +114,14 @@ private fun open(ctx: Context, issue: Issue) {
 fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWeek: () -> Unit = {}) {
     val ctx = LocalContext.current
     val fc = s.forecast
-    val day = fc?.days?.firstOrNull()
+    // A family profile shows their outfit for the same weather.
+    val selProfile = remember(s.prefs.profiles, s.profileSel) {
+        s.profileSel?.let { id -> com.alex.dresscast.Profiles.load(s.prefs).firstOrNull { it.id == id } }
+    }
+    val day = selProfile?.let { s.profileDay(it) } ?: fc?.days?.firstOrNull()
+    val profileChecks = remember { androidx.compose.runtime.mutableStateMapOf<String, Set<Int>>() }
+    var profileSheet by remember { mutableStateOf(false) }
+    if (profileSheet) ProfileSheet(s, pal, null) { profileSheet = false }
     val f = Fmt(s.prefs.fahrenheit)
     var openWarning by remember { mutableStateOf<com.alex.dresscast.Warning?>(null) }
     var planSheet by remember { mutableStateOf(false) }
@@ -136,6 +143,11 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
                 ) { Icon(Ico.share, t("Share", "Κοινοποίηση"), Modifier.size(18.dp), tint = pal.ink) }
             }
 
+            ProfileChips(s, pal) { profileSheet = true }
+            selProfile?.let { pr ->
+                Text(t("Outfit for ${pr.name} · outside ${com.alex.dresscast.Profiles.hours(pr)}", "Ντύσιμο για: ${pr.name} · έξω ${com.alex.dresscast.Profiles.hours(pr)}"),
+                    color = pal.muted, fontSize = 13.sp)
+            }
             if (s.warnings.isNotEmpty()) WarningBanner(s.warnings, pal) { openWarning = it }
 
             s.issues.firstOrNull()?.let { issue ->
@@ -196,7 +208,13 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
                         if (day == null && s.error != null) Text(t("Check your internet connection.", "Έλεγξε τη σύνδεσή σου."),
                             color = pal.scene.ink, fontSize = 13.sp, lineHeight = 18.sp)
                     }
-                    if (day != null) OutfitBand(day, s, pal)
+                    if (day != null) {
+                        if (selProfile == null) OutfitBand(day, s, pal)
+                        else OutfitBand(day, s, pal, profileChecks[selProfile.id] ?: emptySet()) { i ->
+                            val c = profileChecks[selProfile.id] ?: emptySet()
+                            profileChecks[selProfile.id] = if (i in c) c - i else c + i
+                        }
+                    }
                     else Spacer(Modifier.height(16.dp))
                 }
             }
@@ -230,8 +248,8 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
 
 /** Today's outfit inside the picture: tap a chip to tick it off. */
 @Composable
-private fun OutfitBand(day: DayAdvice, s: AppState, pal: Pal) {
-    val checked = s.checked()
+private fun OutfitBand(day: DayAdvice, s: AppState, pal: Pal, checkedOverride: Set<Int>? = null, onToggle: ((Int) -> Unit)? = null) {
+    val checked = checkedOverride ?: s.checked()
     val ready = checked.count { it < day.items.size }
     Column(
         Modifier
@@ -248,7 +266,7 @@ private fun OutfitBand(day: DayAdvice, s: AppState, pal: Pal) {
         }
         day.items.withIndex().chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { (i, item) -> OutfitChip(item, i in checked, pal, Modifier.weight(1f)) { s.toggle(i) } }
+                row.forEach { (i, item) -> OutfitChip(item, i in checked, pal, Modifier.weight(1f)) { if (onToggle != null) onToggle(i) else s.toggle(i) } }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
@@ -687,6 +705,9 @@ fun SettingsScreen(s: AppState, pal: Pal) {
         WardrobeScreen(s, pal) { showWardrobe = false }
         return
     }
+    var profileEdit by remember { mutableStateOf<com.alex.dresscast.Profile?>(null) }
+    var profileOpen by remember { mutableStateOf(false) }
+    if (profileOpen) ProfileSheet(s, pal, profileEdit) { profileOpen = false; profileEdit = null }
     var showDiary by remember { mutableStateOf(false) }
     if (showDiary) {
         DiaryScreen(s, pal) { showDiary = false }
@@ -771,6 +792,9 @@ fun SettingsScreen(s: AppState, pal: Pal) {
         Label(t("Clothes", "Ρούχα"), pal.muted)
         WardrobeEntry(s, pal) { showWardrobe = true }
         DiaryEntryRow(s, pal) { showDiary = true }
+
+        Label(t("Family", "Οικογένεια"), pal.muted)
+        FamilyCard(s, pal) { profileEdit = it; profileOpen = true }
 
         Label(t("Appearance", "Εμφάνιση"), pal.muted)
         Card(pal) {

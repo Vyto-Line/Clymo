@@ -112,6 +112,7 @@ class Prefs(context: Context) {
     var tripChecked: String by Pref("tripChecked", "")
     var tripCache: String by Pref("tripCache", "")
     var tripRemind: Boolean by Pref("tripRemind", true)
+    var profiles: String by Pref("profiles", "[]")
     var tipAir: Boolean by Pref("tipAir", true)
     var shareCity: Boolean by Pref("shareCity", true)
     /** The newest version we've already sent a notification about. */

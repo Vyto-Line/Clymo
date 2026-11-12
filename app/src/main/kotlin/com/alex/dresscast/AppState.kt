@@ -38,6 +38,8 @@ class AppState(val ctx: Context) {
     var plans by mutableStateOf<List<Pair<PlanItem, PlanTip?>>>(emptyList())
     var calendars by mutableStateOf<List<PhoneCalendar>>(emptyList())
     var tips by mutableStateOf<List<DayTip>>(emptyList())
+    /** Which family profile Today is showing (null = you). */
+    var profileSel by mutableStateOf<String?>(null)
     var sun by mutableStateOf<SunInfo?>(null)
 
     // ---- Updates
@@ -91,6 +93,23 @@ class AppState(val ctx: Context) {
     fun deletePlan(id: String) {
         PlanStore.delete(prefs, id)
         rebuild()
+    }
+
+    /** Today's outfit for someone in the family. */
+    fun profileDay(pr: Profile): DayAdvice? {
+        val json = lastJson ?: return null
+        return runCatching { Profiles.forecast(json, prefs, pr).days.firstOrNull() }.getOrNull()
+    }
+
+    fun saveProfile(pr: Profile) {
+        Profiles.upsert(prefs, pr)
+        Scheduler.scheduleAll(ctx)
+    }
+
+    fun deleteProfile(id: String) {
+        Profiles.delete(prefs, id)
+        if (profileSel == id) profileSel = null
+        Scheduler.scheduleAll(ctx)
     }
 
     /** The weather and tip for a plan that's still being edited, for the preview in the sheet. */

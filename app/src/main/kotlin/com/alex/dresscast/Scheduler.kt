@@ -38,6 +38,20 @@ object Scheduler {
         else am.cancel(warn)
         schedulePlans(ctx)
         scheduleTrip(ctx)
+        scheduleProfiles(ctx)
+    }
+
+    /** Each family profile gets its own morning reminder. */
+    fun scheduleProfiles(ctx: Context) {
+        val p = Prefs(ctx)
+        val am = ctx.getSystemService(AlarmManager::class.java)
+        val list = Profiles.load(p)
+        for (i in 0 until 8) {
+            val pr = list.getOrNull(i)
+            val action = Profiles.ACTION + (pr?.id ?: "none$i")
+            if (pr != null && pr.notify) schedule(ctx, action, 100 + i, nextTime(pr.hour, pr.minute))
+            else am.cancel(pending(ctx, action, 100 + i))
+        }
     }
 
     /** The evening before a trip, at 20:00: check your suitcase. */
@@ -171,6 +185,15 @@ object Notifier {
     }
 
     fun pollen(ctx: Context, title: String, text: String) = post(ctx, 6, title, text, text)
+
+    fun profile(ctx: Context, pr: Profile, d: DayAdvice, fahrenheit: Boolean, index: Int) {
+        val f = Fmt(fahrenheit)
+        val title = pr.name + ": " + d.items.take(2).joinToString(" + ") { it.name.lowercase(L.locale) }
+        val text = t("Feels like ${f.t(d.feelStart)} at ${hh(d.startHour)}, high ${f.t(d.tMax)}.", "Αίσθηση ${f.t(d.feelStart)} στις ${hh(d.startHour)}, μέγιστη ${f.t(d.tMax)}.") +
+            (d.rainFrom?.let { t(" Rain from ${hh(it)}.", " Βροχή από τις ${hh(it)}.") } ?: "")
+        val big = text + "\n" + t("Wear: ", "Φόρεσε: ") + d.items.joinToString(", ") { it.name.lowercase(L.locale) } + "."
+        post(ctx, 20 + index, title, text, big)
+    }
 
     fun trip(ctx: Context, trip: Trip, ready: Int, total: Int) {
         val title = t("Tomorrow: ${trip.city}", "Αύριο: ${trip.city}")

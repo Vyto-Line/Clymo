@@ -11,6 +11,25 @@ class AlarmReceiver : BroadcastReceiver() {
         val ctx = context.applicationContext
         val pending = goAsync()
         val action = intent.action
+        if (action != null && action.startsWith(Profiles.ACTION)) {
+            val id = action.removePrefix(Profiles.ACTION)
+            Thread {
+                try {
+                    val p = Prefs(ctx)
+                    L.use(p)
+                    Scheduler.scheduleProfiles(ctx)
+                    val list = Profiles.load(p)
+                    val pr = list.firstOrNull { it.id == id } ?: return@Thread
+                    val json = runCatching { Repo.fetchJson(ctx, p) }.getOrNull() ?: Repo.cached(ctx)?.json ?: return@Thread
+                    val d = Profiles.forecast(json, p, pr).days.firstOrNull() ?: return@Thread
+                    Notifier.profile(ctx, pr, d, p.fahrenheit, list.indexOf(pr))
+                } catch (_: Exception) {
+                } finally {
+                    pending.finish()
+                }
+            }.start()
+            return
+        }
         if (action == Scheduler.ACTION_MORNING || action == Scheduler.ACTION_EVENING || action == null) Scheduler.scheduleAll(ctx)
         if (action == Scheduler.ACTION_PLAN || action == Scheduler.ACTION_WARN || action == Scheduler.ACTION_SUN || action == Scheduler.ACTION_TRIP) {
             Thread {
