@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Vyto-Line/DressCast/releases/latest"><img src="https://img.shields.io/github/v/release/Vyto-Line/DressCast?label=download&color=1F5FC9" alt="Latest release"></a>
+  <a href="https://github.com/Vyto-Line/Clymo/releases/latest"><img src="https://img.shields.io/github/v/release/Vyto-Line/Clymo?label=download&color=1F5FC9" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B-3B7DDD" alt="Android 8.0 or newer">
   <img src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF" alt="Kotlin and Jetpack Compose">
-  <img src="https://img.shields.io/github/license/Vyto-Line/DressCast?color=5E9488" alt="MIT license">
+  <img src="https://img.shields.io/github/license/Vyto-Line/Clymo?color=5E9488" alt="MIT license">
 </p>
 
 **Clymo** (formerly DressCast) turns the weather forecast into a simple answer to the question you actually ask every morning: *what should I wear?*
@@ -89,7 +89,7 @@ Works on Wear OS watches: Galaxy Watch 4 and newer, Pixel Watch and others.
 - On the phone, install **Wear Installer 2** from the Play Store.
 - On the watch, in **Developer options → Wireless debugging**, tap **Pair new device**. It shows an IP address, a port and a 6-digit code.
 - Enter them in Wear Installer 2 to pair, then connect with the IP and port shown on the main **Wireless debugging** screen (a different port from the pairing one).
-- Download **Clymo-Watch.apk** from the [latest release](https://github.com/Vyto-Line/DressCast/releases/latest) in your phone's browser. Choose **Download**, not open or install.
+- Download **Clymo-Watch.apk** from the [latest release](https://github.com/Vyto-Line/Clymo/releases/latest) in your phone's browser. Choose **Download**, not open or install.
 - In Wear Installer 2, choose **Custom APK** and pick that file. It installs on the watch.
 
 **4. Set it up**
@@ -115,7 +115,7 @@ adb install Clymo-Watch.apk
 
 ## Install
 
-1. On your phone, open the **[latest release](https://github.com/Vyto-Line/DressCast/releases/latest)** and tap **Clymo.apk**.
+1. On your phone, open the **[latest release](https://github.com/Vyto-Line/Clymo/releases/latest)** and tap **Clymo.apk**.
 2. Allow your browser to install apps if Android asks.
 3. Open Clymo, pick your location, reminder time and how you feel the cold, and you're done.
 

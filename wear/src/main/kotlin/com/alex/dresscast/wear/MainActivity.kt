@@ -51,7 +51,7 @@ class MainActivity : Activity() {
             text = t("Download the phone app", "Λήψη εφαρμογής για κινητό")
             setOnClickListener {
                 startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://github.com/Vyto-Line/DressCast/releases/latest/download/Clymo.apk")))
+                    android.net.Uri.parse("https://github.com/Vyto-Line/Clymo/releases/latest/download/Clymo.apk")))
             }
         })
         setContentView(LinearLayout(this).apply {

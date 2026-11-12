@@ -15,7 +15,7 @@ data class Release(val version: String, val number: Int, val apkUrl: String, val
 
 /** Checks the GitHub Releases page for a newer Clymo and installs it. */
 object Updater {
-    private const val API = "https://api.github.com/repos/Vyto-Line/DressCast/releases/latest"
+    private const val API = "https://api.github.com/repos/Vyto-Line/Clymo/releases/latest"
 
     private fun info(ctx: Context) = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
 
