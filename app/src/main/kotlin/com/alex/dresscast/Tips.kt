@@ -57,7 +57,31 @@ object Tips {
             if (p.tipBeach) runCatching { beach(json, day, p) }.getOrNull() else null,
             if (p.tipLaundry) runCatching { laundry(day) }.getOrNull() else null,
             if (p.tipCar) runCatching { car(json, day) }.getOrNull() else null,
+            if (p.tipAir) runCatching { air(json, day, p) }.getOrNull() else null,
         )
+    }
+
+    /** Clean air and a mild temperature: a good moment to open the windows. */
+    private fun air(json: JSONObject, day: Day, p: Prefs): DayTip? {
+        val aqi = json.optInt("aqi", -1)
+        if (aqi !in 0..40) return null                                     // European AQI: good or fair only
+        // Not when the pollen you're allergic to is high.
+        val mine = Pollen.selected(p)
+        if (p.pollenOn && Pollen.days(json, p).firstOrNull { it.date == LocalDate.now() }?.worst(mine)?.let { it.level >= 3 } == true) return null
+        val nowH = LocalTime.now().hour
+        if (nowH !in 7..20) return null
+        fun okHour(h: Int): Boolean {
+            val temp = day.hourly("temperature_2m", day.i, h)
+            return !temp.isNaN() && temp in 12.0..27.0 && day.hourly("precipitation_probability", day.i, h) < 40
+        }
+        if (!okHour(nowH)) return null
+        val end = ((nowH + 1)..21).firstOrNull { !okHour(it) } ?: 21
+        if (end - nowH < 1) return null
+        val temp = Fmt(p.fahrenheit).t(day.hourly("temperature_2m", day.i, nowH))
+        return DayTip("air", t("Airing the house", "Αερισμό σπιτιού"),
+            t("Clean air (AQI $aqi) and $temp until ${hh(end)}. Open the windows for 10 minutes.",
+                "Καθαρός αέρας (AQI $aqi) και $temp ως τις ${hh(end)}. Άνοιξε τα παράθυρα για 10 λεπτά."),
+            t("Good time to air the house", "Καλή ώρα για αερισμό"))
     }
 
     private fun laundry(day: Day): DayTip? {

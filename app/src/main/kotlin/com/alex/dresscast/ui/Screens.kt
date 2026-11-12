@@ -276,7 +276,15 @@ private fun OutfitChip(item: Item, checked: Boolean, pal: Pal, modifier: Modifie
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(if (checked) Ico.check else Ico.garment(item.icon), null, Modifier.size(22.dp), tint = if (checked) fg else pal.accent)
+        // A little picture of the garment, with a tick once you've put it on.
+        Box(Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFF6F1E8)), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.Image(
+                androidx.compose.ui.res.painterResource(com.alex.dresscast.ShareCard.picture(item)), null, Modifier.size(34.dp),
+            )
+            if (checked) Box(Modifier.align(Alignment.TopEnd).padding(1.dp).size(16.dp).clip(CircleShape).background(pal.accent), contentAlignment = Alignment.Center) {
+                Icon(Ico.check, null, Modifier.size(11.dp), tint = pal.onAccent)
+            }
+        }
         Column(Modifier.padding(start = 8.dp)) {
             Text(item.name, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Bold, lineHeight = 17.sp)
             Text(item.why, color = fg.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 14.sp)
@@ -673,6 +681,11 @@ fun SettingsScreen(s: AppState, pal: Pal) {
         WardrobeScreen(s, pal) { showWardrobe = false }
         return
     }
+    var showDiary by remember { mutableStateOf(false) }
+    if (showDiary) {
+        DiaryScreen(s, pal) { showDiary = false }
+        return
+    }
 
     Screen {
         Title(t("Settings", "Ρυθμίσεις"), pal)
@@ -751,11 +764,18 @@ fun SettingsScreen(s: AppState, pal: Pal) {
 
         Label(t("Clothes", "Ρούχα"), pal.muted)
         WardrobeEntry(s, pal) { showWardrobe = true }
+        DiaryEntryRow(s, pal) { showDiary = true }
 
         Label(t("Appearance", "Εμφάνιση"), pal.muted)
         Card(pal) {
             Text(t("Theme", "Θέμα"), color = pal.ink, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
             Segmented(listOf("System" to t("System", "Σύστημα"), "Light" to t("Light", "Φωτεινό"), "Dark" to t("Dark", "Σκούρο")), p.theme, pal) { p.theme = it }
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                Spacer(Modifier.height(14.dp))
+                SettingRow(t("Colours from your wallpaper", "Χρώματα από την ταπετσαρία"), t("Material You · the weather picture keeps its colours", "Material You · η εικόνα του καιρού κρατά τα χρώματά της"), pal) {
+                    Switch(p.dynamic, { p.dynamic = it })
+                }
+            }
             Spacer(Modifier.height(14.dp))
             Text(t("Language", "Γλώσσα"), color = pal.ink, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
             Segmented(listOf("System" to t("System", "Σύστημα"), "en" to "English", "el" to "Ελληνικά"), p.lang, pal) { s.setLanguage(it) }

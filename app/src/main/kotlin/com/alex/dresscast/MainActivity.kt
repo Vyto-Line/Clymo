@@ -79,7 +79,11 @@ fun App(s: AppState, activity: ComponentActivity) {
         else -> isSystemInDarkTheme()
     }
     val mood = s.forecast?.days?.firstOrNull()?.mood ?: Mood.Mild
-    val pal = com.alex.dresscast.ui.animated(palette(mood, dark))
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val base = palette(mood, dark)
+    val pal = com.alex.dresscast.ui.animated(
+        if (p.dynamic && android.os.Build.VERSION.SDK_INT >= 31) com.alex.dresscast.ui.dynamicPal(base, ctx, dark) else base
+    )
 
     LaunchedEffect(dark) {
         val style = if (dark) SystemBarStyle.dark(AColor.TRANSPARENT)

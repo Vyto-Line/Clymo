@@ -45,13 +45,17 @@ object ShareCard {
         }
     }
 
-    /** The picture for a wardrobe key, or a sensible one for older items. */
-    fun picture(item: Item): Int = when (item.kind.ifBlank {
+    /** The wardrobe key of an item, or a sensible one for older items. */
+    fun kindOf(item: Item): String = item.kind.ifBlank {
         when (item.icon) {
             Garment.Jacket -> "lightjacket"; Garment.Shirt -> "tshirt"; Garment.Umbrella -> "umbrella"; Garment.Glasses -> "glasses"
             Garment.Sun -> "cap"; Garment.Shorts -> "shorts"; Garment.Shoe -> "sneakers"; Garment.Scarf -> "scarf"; Garment.Pants -> "jeans"
         }
-    }) {
+    }
+
+    fun picture(item: Item): Int = drawable(kindOf(item))
+
+    fun drawable(kind: String): Int = when (kind) {
         "tshirt" -> R.drawable.il_tshirt; "longsleeve" -> R.drawable.il_longsleeve; "thermal" -> R.drawable.il_thermal
         "hoodie" -> R.drawable.il_hoodie; "sweater" -> R.drawable.il_sweater; "shorts" -> R.drawable.il_shorts
         "jeans" -> R.drawable.il_jeans; "trousers" -> R.drawable.il_trousers; "linen" -> R.drawable.il_linen

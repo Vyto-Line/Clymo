@@ -247,6 +247,7 @@ class AppState(val ctx: Context) {
 
     /** -1 = too cold, 0 = just right, 1 = too warm. */
     fun feedback(answer: Int) {
+        forecast?.days?.firstOrNull { it.date == LocalDate.now() }?.let { runCatching { Diary.record(prefs, it, answer) } }
         prefs.learn = (prefs.learn + answer * 0.75f).coerceIn(-3f, 3f)
         prefs.feedbackDay = LocalDate.now().toString()
         prefs.feedbackLast = answer

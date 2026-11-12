@@ -106,6 +106,9 @@ class Prefs(context: Context) {
     var sunOn: Boolean by Pref("sunOn", true)
     var sunNotifiedDay: String by Pref("sunNotifiedDay", "")
     var shareStyle: Int by Pref("shareStyle", 0)
+    var dynamic: Boolean by Pref("dynamic", false)
+    var diary: String by Pref("diary", "[]")
+    var tipAir: Boolean by Pref("tipAir", true)
     var shareCity: Boolean by Pref("shareCity", true)
     /** The newest version we've already sent a notification about. */
     var updateNotified: String by Pref("updateNotified", "")

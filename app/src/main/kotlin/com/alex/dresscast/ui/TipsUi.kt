@@ -55,6 +55,7 @@ fun SunCard(sun: SunInfo, notYetReminded: Boolean, pal: Pal) {
 private fun tipLook(kind: String): Triple<ImageVector, Color, Color> = when (kind) {
     "beach" -> Triple(Ico.wave, Color(0xFFDCEFFB), Color(0xFF0369A1))
     "car" -> Triple(Ico.car, Color(0xFFFFF1D6), Color(0xFF9A5B00))
+    "air" -> Triple(Ico.window, Color(0xFFEDE7FB), Color(0xFF6D28D9))
     else -> Triple(Ico.laundry, Color(0xFFE3F1EC), Color(0xFF0F766E))
 }
 
@@ -95,6 +96,10 @@ fun TipsSettingsCard(s: AppState, pal: Pal) {
         Divider(pal)
         SettingRow(t("Car wash", "Πλύσιμο αυτοκινήτου"), t("When rain or dust is on the way", "Όταν έρχεται βροχή ή σκόνη"), pal) {
             Switch(p.tipCar, { p.tipCar = it; s.refresh() })
+        }
+        Divider(pal)
+        SettingRow(t("Airing the house", "Αερισμός σπιτιού"), t("Clean air and a mild temperature", "Καθαρός αέρας και ήπια θερμοκρασία"), pal) {
+            Switch(p.tipAir, { p.tipAir = it; s.rebuild() })
         }
         Divider(pal)
         SettingRow(t("Sunscreen reminder", "Υπενθύμιση αντηλιακού"), t("Only when UV is 6+ and you're outside", "Μόνο όταν ο UV είναι 6+ και είσαι έξω"), pal) {

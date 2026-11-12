@@ -39,6 +39,18 @@ data class Pal(
     val track: Color get() = if (dark) Color.White.copy(alpha = 0.08f) else Color(0xFFEEF1F5)
 }
 
+/** Material You: the app's surfaces and accent take the wallpaper colours; the weather picture keeps its own. */
+@androidx.annotation.RequiresApi(31)
+fun dynamicPal(base: Pal, ctx: android.content.Context, dark: Boolean): Pal {
+    val cs = if (dark) androidx.compose.material3.dynamicDarkColorScheme(ctx) else androidx.compose.material3.dynamicLightColorScheme(ctx)
+    return base.copy(
+        bg = cs.surfaceContainer,
+        card = if (dark) cs.surfaceContainerHigh else cs.surfaceContainerLowest,
+        ink = cs.onSurface, muted = cs.onSurfaceVariant, cardMuted = cs.onSurfaceVariant,
+        accent = cs.primary, onAccent = cs.onPrimary,
+    )
+}
+
 fun palette(mood: Mood, dark: Boolean): Pal {
     val ink = if (dark) Color(0xFFEEF2F7) else Color(0xFF14181F)
     val cardMuted = if (dark) Color(0xFFB3BDCA) else Color(0xFF5B6472)
@@ -118,6 +130,7 @@ object Ico {
     val up = make("up", "M12 19V5M6 11l6-6 6 6")
     val down = make("down", "M12 5v14M6 13l6 6 6-6")
     val chevron = make("chevron", "M9 5l7 7-7 7", width = 2.5f)
+    val window = make("window", "M5.5 3h13A1.5 1.5 0 0 1 20 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5v-15A1.5 1.5 0 0 1 5.5 3z", "M12 3v18M4 12h16")
     val laundry = make("laundry", "M2 5h20", "M8 5L5 8l2 2 1-1v9h8V9l1 1 2-2-3-3")
     val car = make("car", "M4 16l1.6-5.2A2 2 0 0 1 7.5 9.4h9a2 2 0 0 1 1.9 1.4L20 16v3h-3v-2H7v2H4z", "M7.5 13.5h.01M16.5 13.5h.01")
     val wave = make("wave", "M2 17c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2", "M2 21c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2", "M9 8a3 3 0 1 0 6 0a3 3 0 1 0-6 0")
