@@ -155,6 +155,7 @@ object Tips {
             !maxUv.isNaN() && maxUv >= 6 -> 11 to 16                       // older saved forecasts have no hourly UV
             else -> return null
         }
+        if (LocalTime.now().hour >= uvTo) return null                      // the strong sun is over for today
         val start = maxOf(uvFrom, from)
         val end = minOf(uvTo, to + 1)
         if (start >= end) return null                                      // not outside while the sun is strong
