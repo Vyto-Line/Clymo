@@ -117,7 +117,7 @@ class AppState(val ctx: Context) {
         val r = update ?: return
         if (updateProgress != null) return
         if (!Updater.canInstall(ctx)) {
-            updateStatus = t("Allow DressCast to install updates, then tap Update again.", "Επίτρεψε στο DressCast να εγκαθιστά ενημερώσεις και πάτησε ξανά Ενημέρωση.")
+            updateStatus = t("Allow Clymo to install updates, then tap Update again.", "Επίτρεψε στο Clymo να εγκαθιστά ενημερώσεις και πάτησε ξανά Ενημέρωση.")
             runCatching { activity.startActivity(Updater.allowInstallIntent(ctx)) }
             return
         }

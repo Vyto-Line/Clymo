@@ -321,7 +321,7 @@ object Warnings {
         val con = URL(url).openConnection() as HttpURLConnection
         con.connectTimeout = 15000
         con.readTimeout = 20000
-        con.setRequestProperty("User-Agent", "DressCast (Android)")
+        con.setRequestProperty("User-Agent", "Clymo (Android)")
         try {
             return con.inputStream.bufferedReader().use { it.readText() }
         } finally {

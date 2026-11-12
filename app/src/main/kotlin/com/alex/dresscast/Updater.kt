@@ -13,7 +13,7 @@ import java.net.URL
 
 data class Release(val version: String, val number: Int, val apkUrl: String, val notes: String)
 
-/** Checks the GitHub Releases page for a newer DressCast and installs it. */
+/** Checks the GitHub Releases page for a newer Clymo and installs it. */
 object Updater {
     private const val API = "https://api.github.com/repos/Vyto-Line/DressCast/releases/latest"
 
@@ -29,15 +29,16 @@ object Updater {
         con.connectTimeout = 15000
         con.readTimeout = 15000
         con.setRequestProperty("Accept", "application/vnd.github+json")
-        con.setRequestProperty("User-Agent", "DressCast-Android")
+        con.setRequestProperty("User-Agent", "Clymo-Android")
         try {
             if (con.responseCode != 200) return null
             val o = JSONObject(con.inputStream.bufferedReader().use { it.readText() })
             val tag = o.getString("tag_name")
             val assets = o.getJSONArray("assets")
-            // The phone app; releases also carry DressCast-Watch.apk for Wear OS.
+            // The phone app; releases also carry Clymo-Watch.apk for Wear OS.
             val list = (0 until assets.length()).map { assets.getJSONObject(it) }
-            val apk = list.firstOrNull { it.getString("name") == "DressCast.apk" }
+            val apk = list.firstOrNull { it.getString("name") == "Clymo.apk" }
+                ?: list.firstOrNull { it.getString("name") == "DressCast.apk" }
                 ?: list.firstOrNull { it.getString("name").endsWith(".apk") && !it.getString("name").contains("Watch", true) } ?: return null
             val number = tag.substringAfterLast('.').toIntOrNull() ?: return null
             return Release(tag.removePrefix("v"), number, apk.getString("browser_download_url"), o.optString("body", ""))
@@ -53,7 +54,7 @@ object Updater {
     fun download(ctx: Context, r: Release, onProgress: (Float) -> Unit): File {
         val dir = File(ctx.cacheDir, "updates").apply { mkdirs() }
         dir.listFiles()?.forEach { it.delete() }
-        val file = File(dir, "DressCast-${r.version}.apk")
+        val file = File(dir, "Clymo-${r.version}.apk")
         var url = URL(r.apkUrl)
         var con: HttpURLConnection
         // Follow GitHub's redirect to its download server ourselves, to be safe.
@@ -63,7 +64,7 @@ object Updater {
             con.instanceFollowRedirects = false
             con.connectTimeout = 20000
             con.readTimeout = 30000
-            con.setRequestProperty("User-Agent", "DressCast-Android")
+            con.setRequestProperty("User-Agent", "Clymo-Android")
             val code = con.responseCode
             if (code in 300..399 && hops < 5) {
                 url = URL(url, con.getHeaderField("Location"))
@@ -95,7 +96,7 @@ object Updater {
         return file
     }
 
-    /** Android asks once whether DressCast may install apps (its own updates). */
+    /** Android asks once whether Clymo may install apps (its own updates). */
     fun canInstall(ctx: Context): Boolean = ctx.packageManager.canRequestPackageInstalls()
 
     fun allowInstallIntent(ctx: Context) =

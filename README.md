@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="DressCast: your weather, your outfit, every morning" width="100%">
+  <img src="docs/banner.svg" alt="Clymo: your weather, your outfit, every morning" width="100%">
 </p>
 
 <p align="center">
@@ -9,12 +9,12 @@
   <img src="https://img.shields.io/github/license/Vyto-Line/DressCast?color=5E9488" alt="MIT license">
 </p>
 
-**DressCast** turns the weather forecast into a simple answer to the question you actually ask every morning: *what should I wear?*
+**Clymo** (formerly DressCast) turns the weather forecast into a simple answer to the question you actually ask every morning: *what should I wear?*
 
 At the time you choose, it sends a notification like **"Light jacket + umbrella today"**. Open the app to see the outfit, tick items off as you get dressed, and find out exactly why each one was picked. No account, no ads, no tracking.
 
 <p align="center">
-  <img src="docs/screens.svg" alt="Three DressCast screens: today with outfit cards, today in detail with an hour-by-hour chart, and the week ahead" width="100%">
+  <img src="docs/screens.svg" alt="Three Clymo screens: today with outfit cards, today in detail with an hour-by-hour chart, and the week ahead" width="100%">
 </p>
 
 ## Features
@@ -58,13 +58,13 @@ The colours and the picture follow the day's weather.
 
 ## Widgets
 
-One **DressCast** widget that changes layout as you resize it, from a single tile up to a big panel, plus a **Checklist** widget (ticks sync with the app) and a **Next days** widget.
+One **Clymo** widget that changes layout as you resize it, from a single tile up to a big panel, plus a **Checklist** widget (ticks sync with the app) and a **Next days** widget.
 
 <p align="center">
-  <img src="docs/widgets.svg" alt="DressCast widgets in several sizes" width="100%">
+  <img src="docs/widgets.svg" alt="Clymo widgets in several sizes" width="100%">
 </p>
 
-To add one, long-press your home screen, choose **Widgets** and find **DressCast**.
+To add one, long-press your home screen, choose **Widgets** and find **Clymo**.
 
 ## Wear OS
 
@@ -72,7 +72,7 @@ A **Today** tile (temperature, feels-like, what to wear, rain), a **Next plan** 
 
 Works on Wear OS watches: Galaxy Watch 4 and newer, Pixel Watch and others.
 
-> **Install it on the watch only.** Opening DressCast-Watch.apk on your phone replaces the phone app. If that happens, just install DressCast.apk again; your settings are kept.
+> **Install it on the watch only.** Opening Clymo-Watch.apk on your phone replaces the phone app. If that happens, just install Clymo.apk again; your settings are kept.
 
 ### Install on your watch (phone only, no computer)
 
@@ -89,13 +89,13 @@ Works on Wear OS watches: Galaxy Watch 4 and newer, Pixel Watch and others.
 - On the phone, install **Wear Installer 2** from the Play Store.
 - On the watch, in **Developer options → Wireless debugging**, tap **Pair new device**. It shows an IP address, a port and a 6-digit code.
 - Enter them in Wear Installer 2 to pair, then connect with the IP and port shown on the main **Wireless debugging** screen (a different port from the pairing one).
-- Download **DressCast-Watch.apk** from the [latest release](https://github.com/Vyto-Line/DressCast/releases/latest) in your phone's browser. Choose **Download**, not open or install.
+- Download **Clymo-Watch.apk** from the [latest release](https://github.com/Vyto-Line/DressCast/releases/latest) in your phone's browser. Choose **Download**, not open or install.
 - In Wear Installer 2, choose **Custom APK** and pick that file. It installs on the watch.
 
 **4. Set it up**
-- Open **DressCast on your phone** once, so the watch gets its first weather and outfit.
+- Open **Clymo on your phone** once, so the watch gets its first weather and outfit.
 - **Tiles:** swipe right from the watch face to the end, tap **+ Add tile** and pick **Today** and/or **Next plan**.
-- **Complication:** long-press the watch face, tap **Customize**, tap a complication slot and choose **DressCast**. Faces with several slots work best; not every face accepts every complication.
+- **Complication:** long-press the watch face, tap **Customize**, tap a complication slot and choose **Clymo**. Faces with several slots work best; not every face accepts every complication.
 
 When you're done, turn **Wireless debugging** off again on the watch, as it uses a little battery. Watch updates install the same way.
 
@@ -107,25 +107,25 @@ Do steps 1 and 2 above, then on the computer (with [Android platform tools](http
 ```
 adb pair <watch IP>:<pairing port>      # enter the 6-digit code
 adb connect <watch IP>:<port>
-adb install DressCast-Watch.apk
+adb install Clymo-Watch.apk
 ```
 </details>
 
-**Tiles still say "Open DressCast on your phone"?** Open the phone app again and pull down to refresh, and check the watch is connected in the Galaxy Wearable (or Pixel Watch) app.
+**Tiles still say "Open Clymo on your phone"?** Open the phone app again and pull down to refresh, and check the watch is connected in the Galaxy Wearable (or Pixel Watch) app.
 
 ## Install
 
-1. On your phone, open the **[latest release](https://github.com/Vyto-Line/DressCast/releases/latest)** and tap **DressCast.apk**.
+1. On your phone, open the **[latest release](https://github.com/Vyto-Line/DressCast/releases/latest)** and tap **Clymo.apk**.
 2. Allow your browser to install apps if Android asks.
-3. Open DressCast, pick your location, reminder time and how you feel the cold, and you're done.
+3. Open Clymo, pick your location, reminder time and how you feel the cold, and you're done.
 
-After that, updates arrive inside the app. The first time, Android asks you to allow DressCast to install updates.
+After that, updates arrive inside the app. The first time, Android asks you to allow Clymo to install updates.
 
 **If your morning reminder doesn't arrive:** open **Settings → Reminders on time** in the app and follow the suggestion there. Xiaomi, Samsung and Huawei phones are the most likely to stop background apps.
 
 ## How the advice works
 
-DressCast looks at the **feels-like** temperature during the hours you're outside, not just the daily high. It shifts that by your own comfort setting and what it has learned from your feedback, picks the clothing for that range, and then adds what the day needs: an umbrella when rain is likely while you're out, sunglasses or sunscreen for strong UV, a windproof layer on windy days, boots for snow.
+Clymo looks at the **feels-like** temperature during the hours you're outside, not just the daily high. It shifts that by your own comfort setting and what it has learned from your feedback, picks the clothing for that range, and then adds what the day needs: an umbrella when rain is likely while you're out, sunglasses or sunscreen for strong UV, a windproof layer on windy days, boots for snow.
 
 ## Privacy
 

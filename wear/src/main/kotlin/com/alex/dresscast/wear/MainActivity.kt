@@ -44,14 +44,14 @@ class MainActivity : Activity() {
             setPadding(pad, pad, pad, pad)
         }
         col.addView(tv(t("This is the watch version", "Αυτή είναι η έκδοση για ρολόι"), 22f, bold = true))
-        col.addView(tv(t("\nIt replaced DressCast on your phone. Install the phone app again; your settings are kept.\n",
-            "\nΑντικατέστησε το DressCast στο κινητό σου. Εγκατάστησε ξανά την εφαρμογή για κινητό· οι ρυθμίσεις σου διατηρούνται.\n"),
+        col.addView(tv(t("\nIt replaced Clymo on your phone. Install the phone app again; your settings are kept.\n",
+            "\nΑντικατέστησε το Clymo στο κινητό σου. Εγκατάστησε ξανά την εφαρμογή για κινητό· οι ρυθμίσεις σου διατηρούνται.\n"),
             16f, Color.parseColor("#B3BDCA")))
         col.addView(android.widget.Button(this).apply {
             text = t("Download the phone app", "Λήψη εφαρμογής για κινητό")
             setOnClickListener {
                 startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://github.com/Vyto-Line/DressCast/releases/latest/download/DressCast.apk")))
+                    android.net.Uri.parse("https://github.com/Vyto-Line/DressCast/releases/latest/download/Clymo.apk")))
             }
         })
         setContentView(LinearLayout(this).apply {
@@ -79,7 +79,7 @@ class MainActivity : Activity() {
         }
         val muted = Color.parseColor("#B3BDCA")
         if (!st.has) {
-            col.addView(tv(st.s("labelOpen").ifBlank { "Open DressCast on your phone" }, 15f, muted))
+            col.addView(tv(st.s("labelOpen").ifBlank { "Open Clymo on your phone" }, 15f, muted))
         } else {
             col.addView(tv(st.s("city"), 14f, muted))
             col.addView(tv(st.s("temp"), 42f, bold = true))

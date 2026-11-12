@@ -78,7 +78,7 @@ private fun box(ctx: Context, inner: LayoutElementBuilders.LayoutElement) = Layo
 private fun noData(ctx: Context, st: Store) = box(ctx, Column.Builder().setWidth(dp(150f))
     .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
     .addContent(icon("Jacket", 28f)).addContent(gap(8f))
-    .addContent(text(st.s("labelOpen").ifBlank { "Open DressCast on your phone" }, 14f, MUTED, lines = 3)).build())
+    .addContent(text(st.s("labelOpen").ifBlank { "Open Clymo on your phone" }, 14f, MUTED, lines = 3)).build())
 
 /** "Today": temperature, feels like, what to wear and the rain outlook. */
 class TodayTile : TileService() {

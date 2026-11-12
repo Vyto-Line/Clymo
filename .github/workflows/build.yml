@@ -36,9 +36,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="2.0.${{ github.run_number }}"
-          cp app/build/outputs/apk/release/*.apk DressCast.apk
-          cp wear/build/outputs/apk/release/*.apk DressCast-Watch.apk
-          gh release create "v$VERSION" DressCast.apk DressCast-Watch.apk \
-            --title "DressCast $VERSION" \
-            --notes "Download **DressCast.apk** below and open it on your phone to install. **DressCast-Watch.apk** is only for Wear OS watches (tiles and a watch-face complication). Do not open it on your phone: it would replace the phone app." \
+          cp app/build/outputs/apk/release/*.apk Clymo.apk
+          cp wear/build/outputs/apk/release/*.apk Clymo-Watch.apk
+          gh release create "v$VERSION" Clymo.apk Clymo-Watch.apk \
+            --title "Clymo $VERSION" \
+            --notes "Download **Clymo.apk** below and open it on your phone to install. **Clymo-Watch.apk** is only for Wear OS watches (tiles and a watch-face complication). Do not open it on your phone: it would replace the phone app." \
             --latest

@@ -23,7 +23,7 @@ object Reliability {
         if (!ctx.getSystemService(NotificationManager::class.java).areNotificationsEnabled()) {
             list += Issue(
                 t("Notifications are off", "Οι ειδοποιήσεις είναι απενεργοποιημένες"),
-                t("DressCast can't send your morning outfit.", "Το DressCast δεν μπορεί να σου στείλει το πρωινό ντύσιμο."),
+                t("Clymo can't send your morning outfit.", "Το Clymo δεν μπορεί να σου στείλει το πρωινό ντύσιμο."),
                 t("Turn on", "Ενεργοποίηση"),
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, pkg),
             )
@@ -39,7 +39,7 @@ object Reliability {
         if (!ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(pkg)) {
             list += Issue(
                 t("Battery saver may block reminders", "Η εξοικονόμηση μπαταρίας μπορεί να τις μπλοκάρει"),
-                t("Let DressCast run in the background. It only wakes up a few times a day.", "Άφησε το DressCast να τρέχει στο παρασκήνιο. Ξυπνά μόνο λίγες φορές τη μέρα."),
+                t("Let Clymo run in the background. It only wakes up a few times a day.", "Άφησε το Clymo να τρέχει στο παρασκήνιο. Ξυπνά μόνο λίγες φορές τη μέρα."),
                 t("Allow", "Να επιτρέπεται"),
                 Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$pkg")),
             )

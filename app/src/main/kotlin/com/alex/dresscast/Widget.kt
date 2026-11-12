@@ -60,7 +60,7 @@ private fun refreshInBackground(context: Context, receiver: android.content.Broa
     }.start()
 }
 
-/** The main DressCast widget: changes layout as it's resized, from a 1×1 tile to the 4×3 big picture. */
+/** The main Clymo widget: changes layout as it's resized, from a 1×1 tile to the 4×3 big picture. */
 class WidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) = refreshInBackground(context, this)
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) =
@@ -185,8 +185,8 @@ object Widget {
         v.tint(R.id.w_bg, if (big) w.card else w.bg)
         if (fc == null || d == null) {
             v.text(R.id.w_temp, "–", w.ink)
-            v.text(R.id.w_headline, t("Open DressCast to load the weather", "Άνοιξε το DressCast για τον καιρό"), w.ink)
-            v.text(R.id.w_item1, "DressCast", w.ink)
+            v.text(R.id.w_headline, t("Open Clymo to load the weather", "Άνοιξε το Clymo για τον καιρό"), w.ink)
+            v.text(R.id.w_item1, "Clymo", w.ink)
             return v
         }
         val f = Fmt(fc.fahrenheit)
@@ -319,7 +319,7 @@ object Widget {
         v.show(R.id.w_strip_box, rain != null || d == null)
         v.tint(R.id.w_strip_bg, blend(w.accent, w.card))
         v.tint(R.id.w_strip_icon, w.accent)
-        v.text(R.id.w_strip, if (rain != null) t("Rain from ${hh(rain)}", "Βροχή από ${hh(rain)}") else t("Open DressCast to load", "Άνοιξε το DressCast"), w.accent)
+        v.text(R.id.w_strip, if (rain != null) t("Rain from ${hh(rain)}", "Βροχή από ${hh(rain)}") else t("Open Clymo to load", "Άνοιξε το Clymo"), w.accent)
         return v
     }
 

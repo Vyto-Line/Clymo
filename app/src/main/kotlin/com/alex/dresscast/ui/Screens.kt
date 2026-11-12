@@ -434,9 +434,9 @@ private fun UpdateCard(s: AppState, pal: Pal, compact: Boolean) {
     val r = s.update ?: return
     val ctx = LocalContext.current
     Card(pal, Modifier.border(2.dp, pal.accent, RoundedCornerShape(20.dp))) {
-        Text(t("Update available: DressCast ${r.version}", "Νέα έκδοση: DressCast ${r.version}"), color = pal.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+        Text(t("Update available: Clymo ${r.version}", "Νέα έκδοση: Clymo ${r.version}"), color = pal.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
         Text(t("You have ${Updater.currentName(ctx)}.", "Έχεις την ${Updater.currentName(ctx)}."), color = pal.cardMuted, fontSize = 13.sp)
-        val notes = r.notes.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.contains("DressCast.apk") }
+        val notes = r.notes.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.contains("Clymo.apk") && !it.contains("DressCast.apk") }
         if (!compact && notes.isNotEmpty()) {
             Text(notes.joinToString("\n"), color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
         }
@@ -786,7 +786,7 @@ fun SettingsScreen(s: AppState, pal: Pal) {
         Label(t("About", "Σχετικά"), pal.muted)
         if (s.update != null) UpdateCard(s, pal, compact = false)
         else Card(pal) {
-            SettingRow("DressCast " + Updater.currentName(ctx), s.updateStatus, pal) {
+            SettingRow("Clymo " + Updater.currentName(ctx), s.updateStatus, pal) {
                 Pill(t("Check for updates", "Έλεγχος ενημερώσεων"), pal) { s.checkUpdate(byUser = true) }
             }
         }

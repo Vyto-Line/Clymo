@@ -23,7 +23,7 @@ class OutfitComplication : SuspendingComplicationDataSourceService() {
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
         if (request.complicationType != ComplicationType.SHORT_TEXT) return null
         val st = Store(this)
-        if (!st.has) return data("--", "Shirt", "DressCast")
+        if (!st.has) return data("--", "Shirt", "Clymo")
         return data(st.s("temp"), st.s("mainIcon"), st.s("outfit") + ", " + st.s("temp"))
     }
 

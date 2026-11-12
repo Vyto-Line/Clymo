@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DressCast</string>
+    <string name="app_name">Clymo</string>
     <string name="tile_today">Today</string>
     <string name="tile_plan">Next plan</string>
     <string name="complication">Outfit and temperature</string>

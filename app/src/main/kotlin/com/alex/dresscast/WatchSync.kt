@@ -9,7 +9,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 /**
- * Sends a short summary to the DressCast watch app (Wear OS tiles and complication).
+ * Sends a short summary to the Clymo watch app (Wear OS tiles and complication).
  * Texts are prepared here, in your language and units, so the watch only displays them.
  */
 object WatchSync {
@@ -57,7 +57,7 @@ object WatchSync {
                 m.putString("planIcon", "")
             }
             m.putString("labelNext", t("Next plan", "Επόμενο σχέδιο"))
-            m.putString("labelOpen", t("Open DressCast on your phone", "Άνοιξε το DressCast στο κινητό"))
+            m.putString("labelOpen", t("Open Clymo on your phone", "Άνοιξε το Clymo στο κινητό"))
             m.putLong("at", System.currentTimeMillis())
             Wearable.getDataClient(ctx).putDataItem(req.asPutDataRequest().setUrgent())
         }
