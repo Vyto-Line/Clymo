@@ -108,6 +108,10 @@ class Prefs(context: Context) {
     var shareStyle: Int by Pref("shareStyle", 0)
     var dynamic: Boolean by Pref("dynamic", false)
     var diary: String by Pref("diary", "[]")
+    var trip: String by Pref("trip", "")
+    var tripChecked: String by Pref("tripChecked", "")
+    var tripCache: String by Pref("tripCache", "")
+    var tripRemind: Boolean by Pref("tripRemind", true)
     var tipAir: Boolean by Pref("tipAir", true)
     var shareCity: Boolean by Pref("shareCity", true)
     /** The newest version we've already sent a notification about. */

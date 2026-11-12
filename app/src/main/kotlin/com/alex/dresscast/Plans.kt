@@ -24,6 +24,8 @@ data class Plan(
     /** "out", "in" or "walk" (commute). */
     val where: String = "out",
     val remind: Boolean = true,
+    /** "run", "bike", "walk", "dog", "gym", "work" or "" (anything else). */
+    val activity: String = "",
 ) {
     val startHour get() = start.hour
     val endHour get() = if (end.minute > 0) end.hour + 1 else end.hour
@@ -40,6 +42,7 @@ object PlanStore {
                 date = o.optString("date").takeIf { it.isNotBlank() }?.let { LocalDate.parse(it) },
                 days = o.optString("days").split(',').mapNotNull { it.toIntOrNull() }.toSet(),
                 where = o.optString("where", "out"), remind = o.optBoolean("remind", true),
+                activity = o.optString("activity", ""),
             )
         }
     }.getOrDefault(emptyList())
@@ -47,7 +50,7 @@ object PlanStore {
     fun save(p: Prefs, list: List<Plan>) {
         p.plans = JSONArray(list.map {
             JSONObject().put("id", it.id).put("title", it.title).put("start", it.start.toString()).put("end", it.end.toString())
-                .put("date", it.date?.toString() ?: "").put("days", it.days.joinToString(",")).put("where", it.where).put("remind", it.remind)
+                .put("date", it.date?.toString() ?: "").put("days", it.days.joinToString(",")).put("where", it.where).put("remind", it.remind).put("activity", it.activity)
         }).toString()
     }
 
@@ -176,7 +179,8 @@ class Hourly(json: JSONObject) {
     fun rain(date: LocalDate, hour: Int): Int = idx(date, hour)?.let { rain?.optInt(it, 0) } ?: 0
 }
 
-data class PlanTip(val weather: String, val tip: String, val icon: Garment)
+/** feelsLike: for sports, how warm it will feel once you're moving (null otherwise). */
+data class PlanTip(val weather: String, val tip: String, val icon: Garment, val feelsLike: String? = null)
 
 object PlanAdvice {
     /** What the weather does during a plan and what to bring. Inside plans only count the trip there and back. */
@@ -190,7 +194,9 @@ object PlanAdvice {
         val start = h.feel(item.date, sh) ?: feels.first()
         val end = h.feel(item.date, eh) ?: feels.last()
         val rain = hours.maxOf { h.rain(item.date, it) }
-        val a = feels.min() + p.shift
+        val act = item.plan?.activity ?: ""
+        if (act == "run" || act == "bike") return sport(act, start, feels.min() + p.shift, rain, f, p)
+        val a = feels.min() + p.shift + when (act) { "walk" -> 3; "dog" -> 2; else -> 0 }
         val cover = when {
             a >= 21 -> null
             a >= 18 -> t("Something light at hand", "Κάτι ελαφρύ πρόχειρο")
@@ -212,6 +218,38 @@ object PlanAdvice {
         val weather = f.t(start) + if (rain >= 20) t(" · rain $rain%", " · βροχή $rain%") else ""
         val icon = if (cover != null) Garment.Jacket else if (umbrella) Garment.Umbrella else Garment.Shirt
         return PlanTip(weather, tip, icon)
+    }
+
+    /** Running or cycling: you warm up, so dress for a warmer day than it is. */
+    private fun sport(act: String, start: Double, a: Double, rain: Int, f: Fmt, p: Prefs): PlanTip {
+        val boost = if (act == "run") 10 else 4
+        val eff = a + boost
+        val clothes = if (act == "run") when {
+            eff >= 18 -> t("T-shirt and shorts", "Κοντομάνικο και σορτς")
+            eff >= 10 -> t("Thin long sleeves and shorts", "Λεπτό μακρυμάνικο και σορτς")
+            eff >= 3 -> t("Long sleeves and long trousers", "Μακρυμάνικο και μακρύ παντελόνι")
+            else -> t("Thermal layer, long trousers and gloves", "Ισοθερμικό, μακρύ παντελόνι και γάντια")
+        } else when {
+            eff >= 20 -> t("T-shirt", "Κοντομάνικο")
+            eff >= 12 -> t("Long sleeves and a windbreaker", "Μακρυμάνικο και αντιανεμικό")
+            eff >= 5 -> t("Jacket and gloves", "Μπουφάν και γάντια")
+            else -> t("Warm jacket, gloves and a beanie", "Ζεστό μπουφάν, γάντια και σκούφο")
+        }
+        val extra = when {
+            rain >= 40 -> t(" · rain jacket", " · αδιάβροχο")
+            act == "run" && a < 15 -> t(" · cardigan for the warm-up", " · ζακέτα για το ζέσταμα")
+            else -> ""
+        }
+        val weather = f.t(start) + if (rain >= 20) t(" · rain $rain%", " · βροχή $rain%") else ""
+        val feels = t("You'll feel like ${f.t(eff)}, not ${f.t(a)}", "Θα νιώσεις σαν ${f.t(eff)}, όχι ${f.t(a)}")
+        val icon = if (eff >= 18) Garment.Shirt else Garment.Jacket
+        return PlanTip(weather, clothes + extra, icon, feels)
+    }
+
+    fun activityLabel(a: String) = when (a) {
+        "run" -> t("Running", "Τρέξιμο"); "bike" -> t("Cycling", "Ποδήλατο"); "walk" -> t("Walking", "Περπάτημα")
+        "dog" -> t("Dog walk", "Βόλτα σκύλου"); "gym" -> t("Gym", "Γυμναστήριο"); "work" -> t("Work", "Δουλειά")
+        else -> ""
     }
 
     fun whereLabel(where: String) = when (where) {

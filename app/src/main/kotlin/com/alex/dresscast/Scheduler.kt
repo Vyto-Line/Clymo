@@ -23,6 +23,7 @@ object Scheduler {
     const val ACTION_PLAN = "com.alex.dresscast.PLAN"
     const val ACTION_WARN = "com.alex.dresscast.WARN"
     const val ACTION_SUN = "com.alex.dresscast.SUN"
+    const val ACTION_TRIP = "com.alex.dresscast.TRIP"
 
     fun scheduleAll(ctx: Context) {
         val p = Prefs(ctx)
@@ -36,6 +37,19 @@ object Scheduler {
             3 * AlarmManager.INTERVAL_HOUR, warn)
         else am.cancel(warn)
         schedulePlans(ctx)
+        scheduleTrip(ctx)
+    }
+
+    /** The evening before a trip, at 20:00: check your suitcase. */
+    fun scheduleTrip(ctx: Context) {
+        val p = Prefs(ctx)
+        val am = ctx.getSystemService(AlarmManager::class.java)
+        val pi = pending(ctx, ACTION_TRIP, 8)
+        val trip = Trips.load(p)
+        val at = trip?.takeIf { p.tripRemind }?.let {
+            LocalDateTime.of(it.from.minusDays(1), java.time.LocalTime.of(20, 0)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        }
+        if (at == null || at < System.currentTimeMillis() + 30_000) am.cancel(pi) else schedule(ctx, ACTION_TRIP, 8, at)
     }
 
     /** Sunscreen reminder: only on UV 6+ days, shortly before you're out in the strong sun. */
@@ -157,6 +171,13 @@ object Notifier {
     }
 
     fun pollen(ctx: Context, title: String, text: String) = post(ctx, 6, title, text, text)
+
+    fun trip(ctx: Context, trip: Trip, ready: Int, total: Int) {
+        val title = t("Tomorrow: ${trip.city}", "Αύριο: ${trip.city}")
+        val text = if (total > 0) t("Check your suitcase: $ready of $total packed.", "Έλεγξε τη βαλίτσα: $ready από $total έτοιμα.")
+            else t("Check your suitcase.", "Έλεγξε τη βαλίτσα.")
+        post(ctx, 8, title, text, text)
+    }
 
     fun sun(ctx: Context, info: SunInfo) {
         val text = t("UV ${info.uv} until ${hh(info.to)} and you're outside. Reapply every two hours.",

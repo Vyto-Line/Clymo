@@ -582,6 +582,11 @@ private fun PeriodsCard(day: DayAdvice, f: Fmt, pal: Pal) {
 fun WeekScreen(s: AppState, pal: Pal) {
     val fc = s.forecast
     val f = Fmt(s.prefs.fahrenheit)
+    var showTrip by remember { mutableStateOf(false) }
+    if (showTrip) {
+        TripScreen(s, pal) { showTrip = false }
+        return
+    }
     PullToRefreshBox(isRefreshing = s.pulling, onRefresh = { s.refresh(byUser = true) }, modifier = Modifier.fillMaxSize()) {
         Screen {
             Column {
@@ -589,6 +594,7 @@ fun WeekScreen(s: AppState, pal: Pal) {
                 Title(t("Week ahead", "Η εβδομάδα"), pal)
                 Text(t("Plan laundry and packing a few days early.", "Οργάνωσε πλύσιμο και βαλίτσα από νωρίς."), color = pal.muted, fontSize = 15.sp)
             }
+            TripEntryCard(s, pal) { showTrip = true }
             if (fc == null || fc.days.isEmpty()) {
                 Text(if (s.error != null) t("Couldn't load the forecast.", "Δεν φόρτωσε η πρόγνωση.") else t("Loading…", "Φόρτωση…"), color = pal.muted)
                 return@Screen

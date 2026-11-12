@@ -186,7 +186,13 @@ private fun PlanRow(item: PlanItem, tip: PlanTip?, past: Boolean, pal: Pal, onCl
             }
         }
         Column(Modifier.weight(1f)) {
-            Text(item.title, color = pal.ink.copy(alpha = alpha), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                item.plan?.activity?.takeIf { it.isNotBlank() }?.let { a ->
+                    Icon(Ico.activity(a), null, Modifier.size(16.dp).padding(end = 2.dp), tint = pal.accent)
+                    Spacer(Modifier.width(4.dp))
+                }
+                Text(item.title, color = pal.ink.copy(alpha = alpha), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
             Text(
                 listOfNotNull(PlanAdvice.whereLabel(item.where), tip?.weather).joinToString(" · "),
                 color = pal.cardMuted, fontSize = 13.sp,
@@ -246,13 +252,14 @@ fun PlanSheet(s: AppState, pal: Pal, editing: Plan?, onDismiss: () -> Unit) {
     var days by remember { mutableStateOf(editing?.days ?: emptySet()) }
     var where by remember { mutableStateOf(editing?.where ?: "out") }
     var remind by remember { mutableStateOf(editing?.remind ?: true) }
+    var activity by remember { mutableStateOf(editing?.activity ?: "") }
 
     val date = if (tomorrow) LocalDate.now().plusDays(1) else LocalDate.now()
     fun current() = Plan(
         id = editing?.id ?: java.util.UUID.randomUUID().toString(),
-        title = title.trim().ifBlank { t("Plan", "Σχέδιο") },
+        title = title.trim().ifBlank { PlanAdvice.activityLabel(activity).ifBlank { t("Plan", "Σχέδιο") } },
         start = start, end = if (end.isAfter(start)) end else start.plusMinutes(60).coerceAtMostEndOfDay(start),
-        date = if (days.isEmpty()) date else null, days = days, where = where, remind = remind,
+        date = if (days.isEmpty()) date else null, days = days, where = where, remind = remind, activity = activity,
     )
     // For repeating plans, preview the next day it happens on.
     val previewDate = if (days.isEmpty()) date else (0..6).map { LocalDate.now().plusDays(it.toLong()) }.first { (it.dayOfWeek.value - 1) in days }
@@ -282,6 +289,30 @@ fun PlanSheet(s: AppState, pal: Pal, editing: Plan?, onDismiss: () -> Unit) {
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(focusedTextColor = pal.ink, unfocusedTextColor = pal.ink, focusedBorderColor = pal.accent),
             )
+
+            SheetLabel(t("What are you doing?", "Τι κάνεις;"), pal)
+            listOf("run", "bike", "walk", "dog", "gym", "work").chunked(3).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { a ->
+                        val on = activity == a
+                        Column(
+                            Modifier.weight(1f).height(64.dp).clip(RoundedCornerShape(16.dp))
+                                .background(if (on) pal.tint else Color.Transparent)
+                                .border(if (on) 2.dp else 1.5.dp, if (on) pal.accent else pal.track, RoundedCornerShape(16.dp))
+                                .toggleable(on, role = Role.RadioButton) {
+                                    activity = if (on) "" else a
+                                    if (activity == "gym") where = "in" else if (activity in setOf("run", "bike", "dog")) where = "out"
+                                },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(Ico.activity(a), null, Modifier.size(22.dp), tint = if (on) pal.accent else pal.ink)
+                            Text(PlanAdvice.activityLabel(a), color = if (on) pal.accent else pal.ink, fontSize = 12.sp,
+                                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1)
+                        }
+                    }
+                }
+            }
 
             SheetLabel(t("When?", "Πότε;"), pal)
             if (days.isEmpty()) Segmented(listOf(false to t("Today", "Σήμερα"), true to t("Tomorrow", "Αύριο")), tomorrow, pal) { tomorrow = it }
@@ -322,6 +353,9 @@ fun PlanSheet(s: AppState, pal: Pal, editing: Plan?, onDismiss: () -> Unit) {
                     Icon(Ico.garment(preview?.icon ?: com.alex.dresscast.Garment.Shirt), null, Modifier.size(20.dp), tint = pal.accent)
                     Text("  " + (preview?.tip ?: t("Advice appears once the forecast loads", "Η πρόταση εμφανίζεται μόλις φορτώσει η πρόγνωση")),
                         color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+                preview?.feelsLike?.let {
+                    Text(it, color = pal.accent, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
                 }
                 if (preview != null) Text(
                     when (where) {

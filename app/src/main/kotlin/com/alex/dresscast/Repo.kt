@@ -95,7 +95,7 @@ object Repo {
         return Place(label, r.getDouble("latitude"), r.getDouble("longitude"))
     }
 
-    private fun get(url: String): String {
+    internal fun get(url: String): String {
         val con = URL(url).openConnection() as HttpURLConnection
         con.connectTimeout = 15000
         con.readTimeout = 15000

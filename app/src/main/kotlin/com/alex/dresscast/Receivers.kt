@@ -12,7 +12,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val pending = goAsync()
         val action = intent.action
         if (action == Scheduler.ACTION_MORNING || action == Scheduler.ACTION_EVENING || action == null) Scheduler.scheduleAll(ctx)
-        if (action == Scheduler.ACTION_PLAN || action == Scheduler.ACTION_WARN || action == Scheduler.ACTION_SUN) {
+        if (action == Scheduler.ACTION_PLAN || action == Scheduler.ACTION_WARN || action == Scheduler.ACTION_SUN || action == Scheduler.ACTION_TRIP) {
             Thread {
                 try {
                     val p = Prefs(ctx)
@@ -20,6 +20,11 @@ class AlarmReceiver : BroadcastReceiver() {
                     when (action) {
                         Scheduler.ACTION_PLAN -> planReminder(ctx, p)
                         Scheduler.ACTION_SUN -> sunReminder(ctx, p)
+                        Scheduler.ACTION_TRIP -> Trips.load(p)?.let { trip ->
+                            val days = runCatching { Trips.fetch(p, trip) }.getOrNull() ?: Trips.cached(p)
+                            val items = Trips.pack(days, p)
+                            Notifier.trip(ctx, trip, items.count { it.key in Trips.checked(p) }, items.size)
+                        }
                         else -> warnings(ctx, p)
                     }
                 } catch (_: Exception) {
