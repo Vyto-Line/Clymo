@@ -22,6 +22,7 @@ object Scheduler {
     const val ACTION_RAIN = "com.alex.dresscast.RAIN"
     const val ACTION_PLAN = "com.alex.dresscast.PLAN"
     const val ACTION_WARN = "com.alex.dresscast.WARN"
+    const val ACTION_SUN = "com.alex.dresscast.SUN"
 
     fun scheduleAll(ctx: Context) {
         val p = Prefs(ctx)
@@ -35,6 +36,16 @@ object Scheduler {
             3 * AlarmManager.INTERVAL_HOUR, warn)
         else am.cancel(warn)
         schedulePlans(ctx)
+    }
+
+    /** Sunscreen reminder: only on UV 6+ days, shortly before you're out in the strong sun. */
+    fun scheduleSun(ctx: Context, json: org.json.JSONObject) {
+        val p = Prefs(ctx)
+        val am = ctx.getSystemService(AlarmManager::class.java)
+        val pi = pending(ctx, ACTION_SUN, 7)
+        val info = if (p.sunOn && p.sunNotifiedDay != LocalDate.now().toString()) Tips.sun(json, p) else null
+        val at = info?.let { LocalDateTime.of(LocalDate.now(), it.remindAt).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() }
+        if (at == null || at < System.currentTimeMillis() + 30_000) am.cancel(pi) else schedule(ctx, ACTION_SUN, 7, at)
     }
 
     /** A reminder 30 minutes before the next plan of yours that asks for one. */
@@ -101,7 +112,7 @@ object Scheduler {
 object Notifier {
     private const val CHANNEL = "daily_weather"
 
-    fun show(ctx: Context, fc: Forecast, dayIndex: Int) {
+    fun show(ctx: Context, fc: Forecast, dayIndex: Int, tip: String? = null) {
         val d = fc.days.getOrNull(dayIndex) ?: return
         val f = Fmt(fc.fahrenheit)
         val whenWord = if (dayIndex == 0) t("today", "σήμερα") else t("tomorrow", "αύριο")
@@ -110,7 +121,8 @@ object Notifier {
         val text = (if (dayIndex == 0 && d.now != null && d.feelNow != null)
                 t("${f.t(d.now)} now, feels like ${f.t(d.feelNow)}. High ${f.t(d.tMax)}.", "${f.t(d.now)} τώρα, αίσθηση ${f.t(d.feelNow)}. Μέγιστη ${f.t(d.tMax)}.")
             else t("High ${f.t(d.tMax)}, low ${f.t(d.tMin)}.", "Μέγιστη ${f.t(d.tMax)}, ελάχιστη ${f.t(d.tMin)}.")) +
-            (d.rainFrom?.let { t(" Rain from ${hh(it)} (${d.rainPct}%).", " Βροχή από τις ${hh(it)} (${d.rainPct}%).") } ?: "")
+            (d.rainFrom?.let { t(" Rain from ${hh(it)} (${d.rainPct}%).", " Βροχή από τις ${hh(it)} (${d.rainPct}%).") } ?: "") +
+            (tip?.let { " $it." } ?: "")
         val periods = d.periods.joinToString("  ·  ") { "${it.name} ${f.t(it.feel)}" }
         val wear = d.items.joinToString(", ") { it.name.lowercase(L.locale) }
         val big = "$text\n$periods\n\n" + t("Wear: ", "Φόρεσε: ") + "$wear.\n${fc.city}"
@@ -145,6 +157,12 @@ object Notifier {
     }
 
     fun pollen(ctx: Context, title: String, text: String) = post(ctx, 6, title, text, text)
+
+    fun sun(ctx: Context, info: SunInfo) {
+        val text = t("UV ${info.uv} until ${hh(info.to)} and you're outside. Reapply every two hours.",
+            "UV ${info.uv} ως τις ${hh(info.to)} και είσαι έξω. Ξαναβάλε κάθε δύο ώρες.")
+        post(ctx, 7, t("Time for sunscreen", "Ώρα για αντηλιακό"), text, text)
+    }
 
     fun update(ctx: Context, r: Release) = post(
         ctx, 4,

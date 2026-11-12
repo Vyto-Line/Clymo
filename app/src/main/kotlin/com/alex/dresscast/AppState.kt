@@ -37,6 +37,8 @@ class AppState(val ctx: Context) {
     /** Today's plans and calendar events, with what the weather does during each. */
     var plans by mutableStateOf<List<Pair<PlanItem, PlanTip?>>>(emptyList())
     var calendars by mutableStateOf<List<PhoneCalendar>>(emptyList())
+    var tips by mutableStateOf<List<DayTip>>(emptyList())
+    var sun by mutableStateOf<SunInfo?>(null)
 
     // ---- Updates
     var update by mutableStateOf<Release?>(null)
@@ -47,6 +49,7 @@ class AppState(val ctx: Context) {
     private var lastJson: JSONObject? = null
 
     init {
+        Wardrobe.migrate(prefs)
         L.use(prefs)
         // Show the saved forecast straight away, then refresh.
         Repo.cached(ctx)?.let { c ->
@@ -62,6 +65,8 @@ class AppState(val ctx: Context) {
     /** Plans, pollen and calendars from the saved forecast (no download). */
     private fun extras(json: JSONObject) {
         pollen = runCatching { Pollen.days(json, prefs) }.getOrDefault(emptyList())
+        tips = runCatching { Tips.today(json, prefs) }.getOrDefault(emptyList())
+        sun = if (prefs.sunOn) runCatching { Tips.sun(json, prefs) }.getOrNull() else null
         calendars = Calendars.list(ctx)
         val h = runCatching { Hourly(json) }.getOrNull()
         plans = Calendars.itemsFor(ctx, prefs, LocalDate.now()).map { it to h?.let { hh -> PlanAdvice.of(it, hh, prefs) } }
@@ -177,6 +182,7 @@ class AppState(val ctx: Context) {
         extras(json)
         Scheduler.scheduleRain(ctx, fc)
         Scheduler.schedulePlans(ctx)
+        Scheduler.scheduleSun(ctx, json)
         Widget.updateAll(ctx, fc)
     }
 

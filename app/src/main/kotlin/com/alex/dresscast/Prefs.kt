@@ -98,6 +98,15 @@ class Prefs(context: Context) {
     /** Accessories never to suggest, comma-separated: glasses, cap, umbrella, scarf, boots. */
     var noItems: String by Pref("noItems", "")
     val off: Set<String> get() = noItems.split(',').filter { it.isNotBlank() }.toSet()
+    var wardrobeV: Int by Pref("wardrobeV", 0)
+    // Day tips and sunscreen
+    var tipLaundry: Boolean by Pref("tipLaundry", true)
+    var tipBeach: Boolean by Pref("tipBeach", true)
+    var tipCar: Boolean by Pref("tipCar", true)
+    var sunOn: Boolean by Pref("sunOn", true)
+    var sunNotifiedDay: String by Pref("sunNotifiedDay", "")
+    var shareStyle: Int by Pref("shareStyle", 0)
+    var shareCity: Boolean by Pref("shareCity", true)
     /** The newest version we've already sent a notification about. */
     var updateNotified: String by Pref("updateNotified", "")
 

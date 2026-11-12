@@ -22,7 +22,7 @@ object Repo {
         val url = String.format(
             Locale.US,
             "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f" +
-                "&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,relative_humidity_2m,wind_speed_10m" +
+                "&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,relative_humidity_2m,wind_speed_10m,uv_index" +
                 "&daily=weather_code,temperature_2m_max,temperature_2m_min," +
                 "apparent_temperature_max,apparent_temperature_min," +
                 "precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant," +
@@ -37,12 +37,20 @@ object Repo {
                 "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f&current=european_aqi", p.lat, p.lon)))
             json.put("aqi", aq.getJSONObject("current").getInt("european_aqi"))
         }
-        // Pollen (Europe only, Copernicus via Open-Meteo): hourly grains/m³ for today and tomorrow.
-        if (p.pollenOn) runCatching {
+        // Air quality extras (Europe, Copernicus via Open-Meteo): pollen for the pollen card, dust for the car-wash tip.
+        val aqVars = (if (p.pollenOn) Pollen.TYPES.map { it + "_pollen" } else emptyList()) + (if (p.tipCar) listOf("dust") else emptyList())
+        if (aqVars.isNotEmpty()) runCatching {
             val aq = JSONObject(get(String.format(Locale.US,
                 "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f" +
-                    "&hourly=${Pollen.TYPES.joinToString(",") { it + "_pollen" }}&forecast_days=2&timezone=auto", p.lat, p.lon)))
+                    "&hourly=${aqVars.joinToString(",")}&forecast_days=3&timezone=auto", p.lat, p.lon)))
             json.put("pollen", aq.getJSONObject("hourly"))
+        }
+        // Sea conditions for the beach tip (no data inland).
+        if (p.tipBeach) runCatching {
+            val m = JSONObject(get(String.format(Locale.US,
+                "https://marine-api.open-meteo.com/v1/marine?latitude=%.4f&longitude=%.4f" +
+                    "&hourly=sea_surface_temperature&daily=wave_height_max&forecast_days=2&timezone=auto", p.lat, p.lon)))
+            json.put("marine", m)
         }
         runCatching {
             cacheFile(ctx).writeText(JSONObject().put("fetchedAt", System.currentTimeMillis()).put("data", json).toString())

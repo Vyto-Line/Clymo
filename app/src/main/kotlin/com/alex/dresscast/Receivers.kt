@@ -12,12 +12,16 @@ class AlarmReceiver : BroadcastReceiver() {
         val pending = goAsync()
         val action = intent.action
         if (action == Scheduler.ACTION_MORNING || action == Scheduler.ACTION_EVENING || action == null) Scheduler.scheduleAll(ctx)
-        if (action == Scheduler.ACTION_PLAN || action == Scheduler.ACTION_WARN) {
+        if (action == Scheduler.ACTION_PLAN || action == Scheduler.ACTION_WARN || action == Scheduler.ACTION_SUN) {
             Thread {
                 try {
                     val p = Prefs(ctx)
                     L.use(p)
-                    if (action == Scheduler.ACTION_PLAN) planReminder(ctx, p) else warnings(ctx, p)
+                    when (action) {
+                        Scheduler.ACTION_PLAN -> planReminder(ctx, p)
+                        Scheduler.ACTION_SUN -> sunReminder(ctx, p)
+                        else -> warnings(ctx, p)
+                    }
                 } catch (_: Exception) {
                 } finally {
                     pending.finish()
@@ -47,9 +51,11 @@ class AlarmReceiver : BroadcastReceiver() {
                         if (today != null && soon != null) Notifier.rain(ctx, today, soon)
                     }
                     action == Scheduler.ACTION_EVENING -> Notifier.show(ctx, result, 1)
-                    else -> Notifier.show(ctx, result, 0)
+                    else -> Notifier.show(ctx, result, 0,
+                        source?.let { j -> runCatching { Tips.today(j, p).firstOrNull()?.short }.getOrNull() })
                 }
-                if (result != null) {
+                if (result != null && source != null) {
+                    Scheduler.scheduleSun(ctx, source)
                     Scheduler.scheduleRain(ctx, result)
                     Widget.updateAll(ctx, result)
                     // High pollen for the types you're allergic to: once, with the morning reminder.
@@ -78,6 +84,17 @@ class AlarmReceiver : BroadcastReceiver() {
             }
         }.start()
     }
+}
+
+/** Sunscreen: once a day, only if the sun is still strong while you're out. */
+private fun sunReminder(ctx: Context, p: Prefs) {
+    val today = java.time.LocalDate.now().toString()
+    if (!p.sunOn || p.sunNotifiedDay == today) return
+    val json = Repo.cached(ctx)?.json ?: return
+    val info = Tips.sun(json, p) ?: return
+    if (java.time.LocalTime.now().hour >= info.to) return
+    Notifier.sun(ctx, info)
+    p.sunNotifiedDay = today
 }
 
 /** Downloads warnings and notifies the new ones. */

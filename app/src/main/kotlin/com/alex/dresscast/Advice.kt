@@ -9,7 +9,8 @@ import kotlin.math.roundToInt
 enum class Mood { Mild, Hot, Rainy, Cold }
 enum class Garment { Jacket, Shirt, Umbrella, Glasses, Sun, Shorts, Shoe, Scarf }
 
-data class Item(val name: String, val why: String, val icon: Garment)
+/** kind: the wardrobe key (see Wardrobe), used for illustrations and alternatives. */
+data class Item(val name: String, val why: String, val icon: Garment, val kind: String = "")
 data class Period(val name: String, val feel: Double, val rain: Int, val code: Int)
 
 data class DayAdvice(
@@ -144,74 +145,100 @@ object Advice {
         }
         val shirtWhy = nowText ?: warm
 
+        // Only clothes you own (Settings → My wardrobe); each list is in order of preference.
+        fun has(k: String) = k !in off
+        fun pick(why: String, g: Garment, vararg chain: Pair<String, String>): Item? =
+            chain.firstOrNull { has(it.first) }?.let { Item(it.second, why, g, it.first) }
+        val coat = "coat" to t("Warm coat", "Ζεστό παλτό")
+        val winter = "winterjacket" to t("Winter jacket", "Χειμερινό μπουφάν")
+        val jacket = "winterjacket" to t("Jacket", "Μπουφάν")
+        val light = "lightjacket" to t("Light jacket", "Ελαφρύ μπουφάν")
+        val cardigan = "cardigan" to t("Cardigan", "Ζακέτα")
+        val windbreaker = "windbreaker" to t("Windbreaker", "Αντιανεμικό")
+        val sweater = "sweater" to t("Sweater", "Πουλόβερ")
+        val hoodie = "hoodie" to t("Hoodie", "Φούτερ")
+        val longs = "longsleeve" to t("Long sleeves", "Μακρυμάνικο")
+        val tee = "tshirt" to t("T-shirt", "Κοντομάνικο")
+
         val clothes = mutableListOf<Item>()
+        fun add(item: Item?) { if (item != null) clothes += item }
         when {
             avg < 0 -> {
-                clothes += Item(t("Warm coat", "Ζεστό παλτό"), jacketWhy, Garment.Jacket)
-                clothes += Item(t("Sweater", "Πουλόβερ"), t("Stays under ${f.t(feelMax)} today", "Κάτω από ${f.t(feelMax)} όλη μέρα"), Garment.Shirt)
-                if ("scarf" !in off) clothes += Item(t("Scarf + gloves", "Κασκόλ + γάντια"), t("Freezing cold", "Παγωνιά"), Garment.Scarf)
+                add(pick(jacketWhy, Garment.Jacket, coat, winter))
+                add(pick(t("Stays under ${f.t(feelMax)} today", "Κάτω από ${f.t(feelMax)} όλη μέρα"), Garment.Shirt, sweater, hoodie, longs))
+                val warmBits = listOf("scarf" to t("Scarf", "Κασκόλ"), "gloves" to t("gloves", "γάντια"), "beanie" to t("beanie", "σκούφος"))
+                    .filter { has(it.first) }
+                if (warmBits.isNotEmpty()) clothes += Item(
+                    warmBits.take(2).joinToString(" + ") { it.second }.replaceFirstChar { it.uppercase(L.locale) },
+                    t("Freezing cold", "Παγωνιά"), Garment.Scarf, warmBits.first().first,
+                )
+                if (has("thermal")) clothes += Item(t("Thermal layer", "Ισοθερμικό"), t("Below zero", "Κάτω από το μηδέν"), Garment.Shirt, "thermal")
             }
             avg < 7 -> {
-                clothes += Item(t("Warm coat", "Ζεστό παλτό"), jacketWhy, Garment.Jacket)
-                clothes += Item(t("Sweater", "Πουλόβερ"), warm, Garment.Shirt)
+                add(pick(jacketWhy, Garment.Jacket, coat, winter))
+                add(pick(warm, Garment.Shirt, sweater, hoodie, longs))
             }
             avg < 13 -> {
-                clothes += Item(t("Jacket", "Μπουφάν"), jacketWhy, Garment.Jacket)
-                clothes += Item(t("Long sleeves", "Μακρυμάνικο"), warm, Garment.Shirt)
+                add(pick(jacketWhy, Garment.Jacket, jacket, coat, light))
+                add(pick(warm, Garment.Shirt, longs, hoodie, sweater))
             }
             avg < 18 -> {
-                clothes += Item(t("Light jacket", "Ελαφρύ μπουφάν"), jacketWhy, Garment.Jacket)
-                clothes += if (aMax >= 18) Item(t("T-shirt", "Κοντομάνικο"), shirtWhy, Garment.Shirt)
-                else Item(t("Long sleeves", "Μακρυμάνικο"), warm, Garment.Shirt)
+                add(pick(jacketWhy, Garment.Jacket, light, cardigan, windbreaker, jacket))
+                add(if (aMax >= 18) pick(shirtWhy, Garment.Shirt, tee, longs) else pick(warm, Garment.Shirt, longs, hoodie, tee))
             }
             avg < 24 -> {
-                if (aMin < 16) clothes += Item(t("Light jacket", "Ελαφρύ μπουφάν"), jacketWhy, Garment.Jacket)
-                clothes += Item(t("T-shirt", "Κοντομάνικο"), shirtWhy, Garment.Shirt)
+                if (aMin < 16) add(pick(jacketWhy, Garment.Jacket, light, cardigan, windbreaker))
+                add(pick(shirtWhy, Garment.Shirt, tee, longs))
             }
             avg < 29 -> {
-                clothes += Item(t("T-shirt", "Κοντομάνικο"), warm, Garment.Shirt)
-                clothes += Item(t("Shorts", "Σορτς"), t("Warm all day", "Ζέστη όλη μέρα"), Garment.Shorts)
+                add(pick(warm, Garment.Shirt, tee))
+                add(pick(t("Warm all day", "Ζέστη όλη μέρα"), Garment.Shorts, "shorts" to t("Shorts", "Σορτς")))
             }
             else -> {
-                clothes += Item(t("Linen shirt", "Λινό πουκάμισο"), shirtWhy, Garment.Shirt)
-                clothes += Item(t("Shorts", "Σορτς"), t("Hot all day", "Πολλή ζέστη όλη μέρα"), Garment.Shorts)
+                add(pick(shirtWhy, Garment.Shirt, "tshirt" to t("Linen shirt", "Λινό πουκάμισο")))
+                add(pick(t("Hot all day", "Πολλή ζέστη όλη μέρα"), Garment.Shorts, "shorts" to t("Shorts", "Σορτς")))
             }
         }
 
         val extras = mutableListOf<Item>()
         val snow = isSnow(worst)
         val wetOut = outPeriods.count { it.rain >= 50 }
-        // Accessories respect what the user turned off in Settings, with a sensible alternative where there is one.
-        fun rainCover(why: String) =
-            if ("umbrella" !in off) Item(t("Umbrella", "Ομπρέλα"), why, Garment.Umbrella)
-            else Item(t("Hooded rain jacket", "Αδιάβροχο με κουκούλα"), why, Garment.Jacket)
+        fun extra(item: Item?) { if (item != null) extras += item }
+        fun rainCover(why: String) = pick(why, Garment.Umbrella, "umbrella" to t("Umbrella", "Ομπρέλα"))
+            ?: pick(why, Garment.Jacket, "raincoat" to t("Hooded rain jacket", "Αδιάβροχο με κουκούλα"))
         if (snow) {
-            if ("boots" !in off) extras += Item(t("Boots", "Μπότες"), t("Snow expected", "Αναμένεται χιόνι"), Garment.Shoe)
+            extra(pick(t("Snow expected", "Αναμένεται χιόνι"), Garment.Shoe, "boots" to t("Boots", "Μπότες"), "waterproof" to t("Waterproof shoes", "Αδιάβροχα παπούτσια")))
         } else if (rainFrom != null) {
             if (outPeriods.isNotEmpty() && wetOut == outPeriods.size) {
-                extras += rainCover(t("$rainPct% rain all day", "$rainPct% βροχή όλη μέρα"))
-                if (rainMm >= 3 && "boots" !in off) extras += Item(t("Waterproof shoes", "Αδιάβροχα παπούτσια"), t("${rainMm.roundToInt()} mm of rain", "${rainMm.roundToInt()} mm βροχής"), Garment.Shoe)
+                extra(rainCover(t("$rainPct% rain all day", "$rainPct% βροχή όλη μέρα")))
+                if (rainMm >= 3) extra(pick(t("${rainMm.roundToInt()} mm of rain", "${rainMm.roundToInt()} mm βροχής"), Garment.Shoe,
+                    "waterproof" to t("Waterproof shoes", "Αδιάβροχα παπούτσια"), "boots" to t("Boots", "Μποτάκια")))
             } else {
-                extras += rainCover(t("$rainPct% rain from ${hh(rainFrom)}", "$rainPct% βροχή από τις ${hh(rainFrom)}"))
+                extra(rainCover(t("$rainPct% rain from ${hh(rainFrom)}", "$rainPct% βροχή από τις ${hh(rainFrom)}")))
             }
-        } else if (rainPct >= 30 && "umbrella" !in off) {
-            extras += Item(t("Small umbrella", "Μικρή ομπρέλα"), t("$rainPct% chance of rain", "$rainPct% πιθανότητα βροχής"), Garment.Umbrella)
+        } else if (rainPct >= 30) {
+            extra(pick(t("$rainPct% chance of rain", "$rainPct% πιθανότητα βροχής"), Garment.Umbrella, "umbrella" to t("Small umbrella", "Μικρή ομπρέλα")))
         }
         if (wind >= 35 && clothes.none { it.icon == Garment.Jacket } && extras.none { it.icon == Garment.Jacket }) {
-            extras += Item(t("Windproof layer", "Αντιανεμικό"), t("Wind ${wind.roundToInt()} km/h", "Άνεμος ${wind.roundToInt()} km/h"), Garment.Jacket)
+            extra(pick(t("Wind ${wind.roundToInt()} km/h", "Άνεμος ${wind.roundToInt()} km/h"), Garment.Jacket,
+                "windbreaker" to t("Windproof layer", "Αντιανεμικό"), "raincoat" to t("Rain jacket against the wind", "Αδιάβροχο για τον αέρα")))
         }
         val uvWhy = t("UV ${uv.roundToInt()} at midday", "UV ${uv.roundToInt()} το μεσημέρι")
         if (uv >= 6) {
-            extras += if ("cap" !in off) Item(t("Cap + sunscreen", "Καπέλο + αντηλιακό"), uvWhy, Garment.Sun)
-            else Item(t("Sunscreen", "Αντηλιακό"), uvWhy, Garment.Sun)
-            if ("glasses" !in off && avg >= 16) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), uvWhy, Garment.Glasses)
+            when {
+                has("cap") && has("sunscreen") -> extras += Item(t("Cap + sunscreen", "Καπέλο + αντηλιακό"), uvWhy, Garment.Sun, "cap")
+                has("cap") -> extras += Item(t("Cap", "Καπέλο"), uvWhy, Garment.Sun, "cap")
+                has("sunscreen") -> extras += Item(t("Sunscreen", "Αντηλιακό"), uvWhy, Garment.Sun, "sunscreen")
+            }
+            if (has("glasses") && avg >= 16) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), uvWhy, Garment.Glasses, "glasses")
         } else if (uv >= 3 && avg >= 16) {
-            if ("glasses" !in off) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), uvWhy, Garment.Glasses)
-            else if ("cap" !in off) extras += Item(t("Cap", "Καπέλο"), t("Shades your eyes · UV ${uv.roundToInt()}", "Σκιάζει τα μάτια · UV ${uv.roundToInt()}"), Garment.Sun)
+            if (has("glasses")) extras += Item(t("Sunglasses", "Γυαλιά ηλίου"), uvWhy, Garment.Glasses, "glasses")
+            else if (has("cap")) extras += Item(t("Cap", "Καπέλο"), t("Shades your eyes · UV ${uv.roundToInt()}", "Σκιάζει τα μάτια · UV ${uv.roundToInt()}"), Garment.Sun, "cap")
         }
 
         val keep = (4 - extras.size).coerceAtLeast(2)
         val items = (clothes.take(keep) + extras).take(4)
+            .ifEmpty { listOf(Item(t("Your usual clothes", "Τα συνηθισμένα σου ρούχα"), warm, Garment.Shirt)) }
 
         val mood = when {
             snow || avg < 6 -> Mood.Cold
@@ -244,7 +271,7 @@ object Advice {
             if (wind >= 30) t("windy", "αέρας") else null,
         ).joinToString(" · ")
 
-        val tag = if (mood == Mood.Rainy) t("Rain jacket", "Αδιάβροχο") else clothes.first().name
+        val tag = if (mood == Mood.Rainy) t("Rain jacket", "Αδιάβροχο") else (clothes.firstOrNull() ?: items.firstOrNull())?.name ?: t("Your usual clothes", "Τα συνηθισμένα σου")
 
         return DayAdvice(date, code, tMin, tMax, feelMin, feelMax, now, feelNow, feelStart, from, peakHour, feelEnd, to, rainPct, rainFrom, rainHours,
             wind, uv, periods, mood, headline, sub, items, tag)

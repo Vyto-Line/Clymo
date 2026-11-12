@@ -121,12 +121,19 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
     var editing by remember { mutableStateOf<com.alex.dresscast.Plan?>(null) }
     openWarning?.let { w -> WarningSheet(s.warnings, w, pal) { openWarning = null } }
     if (planSheet) PlanSheet(s, pal, editing) { planSheet = false; editing = null }
+    var shareSheet by remember { mutableStateOf(false) }
+    if (shareSheet && day != null) ShareSheet(s, pal) { shareSheet = false }
     PullToRefreshBox(isRefreshing = s.pulling, onRefresh = { s.refresh(byUser = true) }, modifier = Modifier.fillMaxSize()) {
         Screen {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Ico.pin, null, Modifier.size(16.dp), tint = pal.ink)
                 Text(" " + s.prefs.city, color = pal.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f), maxLines = 1)
                 Text(LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMMM", L.locale)), color = pal.muted, fontSize = 13.sp)
+                if (day != null) Box(
+                    Modifier.padding(start = 8.dp).size(40.dp).clip(CircleShape).background(pal.card.copy(alpha = 0.7f))
+                        .clickable(role = Role.Button, onClickLabel = t("Share today's outfit", "Κοινοποίηση ντυσίματος")) { shareSheet = true },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Ico.share, t("Share", "Κοινοποίηση"), Modifier.size(18.dp), tint = pal.ink) }
             }
 
             if (s.warnings.isNotEmpty()) WarningBanner(s.warnings, pal) { openWarning = it }
@@ -200,6 +207,8 @@ fun TodayScreen(s: AppState, pal: Pal, onOpenDetails: () -> Unit = {}, onOpenWee
             }
 
             if (day != null) {
+                s.sun?.let { sun -> Box(Modifier.enter(1)) { SunCard(sun, s.prefs.sunNotifiedDay != LocalDate.now().toString(), pal) } }
+                if (s.tips.isNotEmpty()) Box(Modifier.enter(1)) { TipsCard(s.tips, pal) }
                 Box(Modifier.enter(1)) {
                     PlansCard(s, pal, onAdd = { editing = null; planSheet = true }, onEdit = { editing = it; planSheet = true })
                 }
@@ -570,6 +579,8 @@ fun WeekScreen(s: AppState, pal: Pal) {
     var editing by remember { mutableStateOf<com.alex.dresscast.Plan?>(null) }
     openWarning?.let { w -> WarningSheet(s.warnings, w, pal) { openWarning = null } }
     if (planSheet) PlanSheet(s, pal, editing) { planSheet = false; editing = null }
+    var shareSheet by remember { mutableStateOf(false) }
+    if (shareSheet && day != null) ShareSheet(s, pal) { shareSheet = false }
     PullToRefreshBox(isRefreshing = s.pulling, onRefresh = { s.refresh(byUser = true) }, modifier = Modifier.fillMaxSize()) {
         Screen {
             Column {
@@ -664,6 +675,11 @@ fun SettingsScreen(s: AppState, pal: Pal) {
     val calLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { ok -> p.calOn = ok; s.rebuild() }
+    var showWardrobe by remember { mutableStateOf(false) }
+    if (showWardrobe) {
+        WardrobeScreen(s, pal) { showWardrobe = false }
+        return
+    }
 
     Screen {
         Title(t("Settings", "Ρυθμίσεις"), pal)
@@ -718,6 +734,9 @@ fun SettingsScreen(s: AppState, pal: Pal) {
         Label(t("Pollen", "Γύρη"), pal.muted)
         PollenSettingsCard(s, pal)
 
+        Label(t("Day tips", "Συμβουλές ημέρας"), pal.muted)
+        TipsSettingsCard(s, pal)
+
         Label(t("Hours outside", "Ώρες έξω"), pal.muted)
         HoursCard(s, pal)
 
@@ -737,42 +756,8 @@ fun SettingsScreen(s: AppState, pal: Pal) {
             Segmented(listOf(false to "°C", true to "°F"), p.fahrenheit, pal) { p.fahrenheit = it; s.rebuild() }
         }
 
-        Label(t("Accessories", "Αξεσουάρ"), pal.muted)
-        Card(pal) {
-            Text(t("Suggest these when the weather calls for them. Turn off anything you can't or don't want to wear.",
-                "Πρότεινέ τα όταν το απαιτεί ο καιρός. Απενεργοποίησε ό,τι δεν μπορείς ή δεν θέλεις να φοράς."),
-                color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 4.dp))
-            val accessories = listOf(
-                Triple("glasses", Ico.glasses, t("Sunglasses", "Γυαλιά ηλίου")),
-                Triple("cap", Ico.sun, t("Caps and hats", "Καπέλα")),
-                Triple("umbrella", Ico.umbrella, t("Umbrella", "Ομπρέλα")),
-                Triple("scarf", Ico.scarf, t("Scarf and gloves", "Κασκόλ και γάντια")),
-                Triple("boots", Ico.shoe, t("Boots and waterproof shoes", "Μπότες και αδιάβροχα παπούτσια")),
-            )
-            val off = p.off
-            accessories.forEachIndexed { i, (key, icon, name) ->
-                if (i > 0) HorizontalDivider(Modifier.padding(vertical = 6.dp), color = pal.track)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(pal.tint), contentAlignment = Alignment.Center) {
-                        Icon(icon, null, Modifier.size(18.dp), tint = pal.accent)
-                    }
-                    Text(name, color = pal.ink, fontSize = 15.sp, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                    Switch(key !in off, { on ->
-                        p.noItems = (if (on) off - key else off + key).joinToString(",")
-                        s.rebuild()
-                    })
-                }
-            }
-            if ("glasses" in off || "umbrella" in off) {
-                Text(
-                    listOfNotNull(
-                        if ("glasses" in off) t("Without sunglasses, we'll suggest a cap on sunny days.", "Χωρίς γυαλιά ηλίου, θα προτείνουμε καπέλο τις ηλιόλουστες μέρες.") else null,
-                        if ("umbrella" in off) t("Without an umbrella, we'll suggest a hooded rain jacket.", "Χωρίς ομπρέλα, θα προτείνουμε αδιάβροχο με κουκούλα.") else null,
-                    ).joinToString(" "),
-                    color = pal.cardMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp),
-                )
-            }
-        }
+        Label(t("Clothes", "Ρούχα"), pal.muted)
+        WardrobeEntry(s, pal) { showWardrobe = true }
 
         Label(t("Appearance", "Εμφάνιση"), pal.muted)
         Card(pal) {
