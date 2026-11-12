@@ -28,7 +28,7 @@ object Scheduler {
     fun scheduleAll(ctx: Context) {
         val p = Prefs(ctx)
         val am = ctx.getSystemService(AlarmManager::class.java)
-        schedule(ctx, ACTION_MORNING, 0, nextTime(p.hour, p.minute))
+        schedule(ctx, ACTION_MORNING, 0, nextMorning(p))
         if (p.evening) schedule(ctx, ACTION_EVENING, 1, nextTime(21, 0))
         else am.cancel(pending(ctx, ACTION_EVENING, 1))
         // Warnings are checked every few hours; Android may batch these to save battery.
@@ -106,6 +106,20 @@ object Scheduler {
             .map { it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() }
             .firstOrNull { it > now + 60_000 }
         if (at == null) am.cancel(pi) else schedule(ctx, ACTION_RAIN, 2, at)
+    }
+
+    /** The next morning reminder, using the weekend time on Saturdays and Sundays if set. */
+    fun nextMorning(p: Prefs): Long {
+        val zone = ZoneId.systemDefault()
+        val now = System.currentTimeMillis()
+        for (d in 0..7) {
+            val date = LocalDate.now().plusDays(d.toLong())
+            val weekend = date.dayOfWeek.value >= 6 && p.wkTime
+            val at = LocalDateTime.of(date, java.time.LocalTime.of(if (weekend) p.wkHour else p.hour, if (weekend) p.wkMinute else p.minute))
+                .atZone(zone).toInstant().toEpochMilli()
+            if (at > now) return at
+        }
+        return nextTime(p.hour, p.minute)
     }
 
     fun nextTime(hour: Int, minute: Int): Long {

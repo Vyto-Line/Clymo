@@ -51,6 +51,10 @@ class Prefs(context: Context) {
     var useGps: Boolean by Pref("useGps", false)
     var hour: Int by Pref("hour", 8)
     var minute: Int by Pref("minute", 0)
+    /** A different morning reminder time on Saturdays and Sundays. */
+    var wkTime: Boolean by Pref("wkTime", false)
+    var wkHour: Int by Pref("wkHour", 9)
+    var wkMinute: Int by Pref("wkMinute", 0)
     /** -2 = runs cold … 2 = runs warm. */
     var comfort: Int by Pref("comfort", 0)
     var fahrenheit: Boolean by Pref("fahrenheit", false)

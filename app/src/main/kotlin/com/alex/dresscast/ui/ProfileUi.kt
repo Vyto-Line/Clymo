@@ -123,6 +123,14 @@ fun ProfileSheet(s: AppState, pal: Pal, editing: Profile?, onDismiss: () -> Unit
     var hour by remember { mutableStateOf(editing?.hour ?: 7) }
     var minute by remember { mutableStateOf(editing?.minute ?: 15) }
     var showWardrobe by remember { mutableStateOf(false) }
+    var timeFor by remember { mutableStateOf("") }
+    when (timeFor) {
+        "from" -> TimeSheet(t("Goes out at", "Βγαίνει στις"), null, from, 0, pal, presets = listOf(7 to 0, 8 to 0, 9 to 0, 10 to 0), hourOnly = true,
+            onDismiss = { timeFor = "" }) { h, _, _ -> from = h; if (to <= from) to = (from + 1).coerceAtMost(23) }
+        "to" -> TimeSheet(t("Back at", "Γυρίζει στις"), null, to, 0, pal, presets = listOf(13 to 0, 14 to 0, 16 to 0, 18 to 0), hourOnly = true,
+            onDismiss = { timeFor = "" }) { h, _, _ -> to = h.coerceIn(from, 23) }
+        "notify" -> TimeSheet(t("Morning reminder", "Πρωινή ειδοποίηση"), null, hour, minute, pal, onDismiss = { timeFor = "" }) { h, m, _ -> hour = h; minute = m }
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = state, containerColor = pal.card) {
         Column(
@@ -153,14 +161,14 @@ fun ProfileSheet(s: AppState, pal: Pal, editing: Profile?, onDismiss: () -> Unit
             Segmented(listOf(-1 to Profiles.comfortLabel(-1), 0 to Profiles.comfortLabel(0), 1 to Profiles.comfortLabel(1)), comfort, pal) { comfort = it }
             Text(t("Hours outside (school, work…)", "Ώρες έξω (σχολείο, δουλειά…)"), color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Pill("%02d:00".format(from), pal, Modifier.weight(1f)) { pickTime(ctx, from, 0) { h, _ -> from = h; if (to <= from) to = (from + 1).coerceAtMost(23) } }
+                Pill("%02d:00".format(from), pal, Modifier.weight(1f)) { timeFor = "from" }
                 Text("–", color = pal.ink, fontSize = 18.sp)
-                Pill("%02d:00".format(to), pal, Modifier.weight(1f)) { pickTime(ctx, to, 0) { h, _ -> to = h.coerceAtLeast(from) } }
+                Pill("%02d:00".format(to), pal, Modifier.weight(1f)) { timeFor = "to" }
             }
             SettingRow(t("Morning reminder", "Πρωινή ειδοποίηση"), if (notify) "%02d:%02d".format(hour, minute) else null, pal) {
                 Switch(notify, { notify = it })
             }
-            if (notify) Pill(t("Change time", "Αλλαγή ώρας"), pal, Modifier.fillMaxWidth()) { pickTime(ctx, hour, minute) { h, m -> hour = h; minute = m } }
+            if (notify) Pill(t("Change time", "Αλλαγή ώρας"), pal, Modifier.fillMaxWidth()) { timeFor = "notify" }
             SettingRow(t("Their wardrobe", "Η γκαρνταρόμπα του/της"), t("${com.alex.dresscast.Wardrobe.all.count { it.key !in off }} items", "${com.alex.dresscast.Wardrobe.all.count { it.key !in off }} ρούχα"), pal) {
                 Text(if (showWardrobe) t("Hide", "Απόκρυψη") else t("Edit", "Αλλαγή"), color = pal.accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(role = Role.Button) { showWardrobe = !showWardrobe }.padding(8.dp))

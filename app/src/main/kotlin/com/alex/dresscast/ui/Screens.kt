@@ -734,14 +734,19 @@ fun SettingsScreen(s: AppState, pal: Pal) {
 
         Label(t("Notifications", "Ειδοποιήσεις"), pal.muted)
         Card(pal) {
-            val next = SimpleDateFormat("EEEE d MMM, HH:mm", L.locale).format(Date(Scheduler.nextTime(p.hour, p.minute)))
-            SettingRow(t("Morning reminder", "Πρωινή υπενθύμιση"), t("Next one: $next", "Επόμενη: $next"), pal) {
-                Pill("%02d:%02d".format(p.hour, p.minute), pal) {
-                    pickTime(ctx, p.hour, p.minute) { h, m ->
-                        p.hour = h; p.minute = m
-                        Scheduler.scheduleAll(ctx)
-                    }
-                }
+            val next = SimpleDateFormat("EEEE d MMM, HH:mm", L.locale).format(Date(Scheduler.nextMorning(p)))
+            var timeSheet by remember { mutableStateOf(false) }
+            if (timeSheet) TimeSheet(
+                t("Notification time", "Ώρα ειδοποίησης"), t("Every morning, with the day's outfit", "Κάθε πρωί, με το ντύσιμο της ημέρας"),
+                p.hour, p.minute, pal, weekend = WeekendTime(p.wkTime, p.wkHour, p.wkMinute), onDismiss = { timeSheet = false },
+            ) { h, m, wk ->
+                p.hour = h; p.minute = m
+                if (wk != null) { p.wkTime = wk.on; p.wkHour = wk.hour; p.wkMinute = wk.minute }
+                Scheduler.scheduleAll(ctx)
+            }
+            SettingRow(t("Morning reminder", "Πρωινή υπενθύμιση"),
+                t("Next one: $next", "Επόμενη: $next") + if (p.wkTime) t(" · weekends %02d:%02d".format(p.wkHour, p.wkMinute), " · Σαβ/κο %02d:%02d".format(p.wkHour, p.wkMinute)) else "", pal) {
+                Pill("%02d:%02d".format(p.hour, p.minute), pal) { timeSheet = true }
             }
             Divider(pal)
             SettingRow(t("Evening preview", "Βραδινή προεπισκόπηση"), t("Tomorrow's outfit at 21:00", "Το αυριανό ντύσιμο στις 21:00"), pal) {
@@ -857,6 +862,10 @@ fun SetupScreen(s: AppState, pal: Pal) {
             Label(t("2 · When should we remind you?", "2 · Πότε να σε ειδοποιούμε;"), pal.cardMuted)
             val presets = listOf(7 to 0, 7 to 30, 8 to 0, 8 to 30)
             val isPreset = (p.hour to p.minute) in presets
+            var setupTime by remember { mutableStateOf(false) }
+            if (setupTime) TimeSheet(t("Notification time", "Ώρα ειδοποίησης"), null, p.hour, p.minute, pal, onDismiss = { setupTime = false }) { h, m, _ ->
+                p.hour = h; p.minute = m
+            }
             Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 presets.forEach { (h, m) ->
                     TimeChip("%02d:%02d".format(h, m), p.hour == h && p.minute == m, pal, Modifier.weight(1f)) {
@@ -866,7 +875,7 @@ fun SetupScreen(s: AppState, pal: Pal) {
             }
             TimeChip(if (isPreset) t("Other time…", "Άλλη ώρα…") else "%02d:%02d".format(p.hour, p.minute), !isPreset, pal,
                 Modifier.fillMaxWidth().padding(top = 6.dp)) {
-                pickTime(ctx, p.hour, p.minute) { h, m -> p.hour = h; p.minute = m }
+                setupTime = true
             }
         }
 

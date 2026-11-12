@@ -253,6 +253,20 @@ fun PlanSheet(s: AppState, pal: Pal, editing: Plan?, onDismiss: () -> Unit) {
     var where by remember { mutableStateOf(editing?.where ?: "out") }
     var remind by remember { mutableStateOf(editing?.remind ?: true) }
     var activity by remember { mutableStateOf(editing?.activity ?: "") }
+    var timeFor by remember { mutableStateOf("") }
+    if (timeFor.isNotEmpty()) {
+        val isStart = timeFor == "start"
+        val cur = if (isStart) start else end
+        TimeSheet(
+            if (isStart) t("Starts at", "Ξεκινά στις") else t("Ends at", "Τελειώνει στις"), null, cur.hour, cur.minute, pal,
+            presets = listOf(8 to 0, 12 to 0, 18 to 0, 20 to 0), onDismiss = { timeFor = "" },
+        ) { h, m, _ ->
+            if (isStart) {
+                val len = java.time.Duration.between(start, end).toMinutes().coerceAtLeast(30)
+                start = LocalTime.of(h, m); end = start.plusMinutes(len).coerceAtMostEndOfDay(start)
+            } else end = LocalTime.of(h, m)
+        }
+    }
 
     val date = if (tomorrow) LocalDate.now().plusDays(1) else LocalDate.now()
     fun current() = Plan(
@@ -317,14 +331,9 @@ fun PlanSheet(s: AppState, pal: Pal, editing: Plan?, onDismiss: () -> Unit) {
             SheetLabel(t("When?", "Πότε;"), pal)
             if (days.isEmpty()) Segmented(listOf(false to t("Today", "Σήμερα"), true to t("Tomorrow", "Αύριο")), tomorrow, pal) { tomorrow = it }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Pill(hm(start), pal, Modifier.weight(1f)) {
-                    pickTime(ctx, start.hour, start.minute) { h, m ->
-                        val len = java.time.Duration.between(start, end).toMinutes().coerceAtLeast(30)
-                        start = LocalTime.of(h, m); end = start.plusMinutes(len).coerceAtMostEndOfDay(start)
-                    }
-                }
+                Pill(hm(start), pal, Modifier.weight(1f)) { timeFor = "start" }
                 Text("–", color = pal.ink, fontSize = 18.sp)
-                Pill(hm(end), pal, Modifier.weight(1f)) { pickTime(ctx, end.hour, end.minute) { h, m -> end = LocalTime.of(h, m) } }
+                Pill(hm(end), pal, Modifier.weight(1f)) { timeFor = "end" }
             }
             val names = listOf(t("M", "Δ"), t("T", "Τ"), t("W", "Τ"), t("T", "Π"), t("F", "Π"), t("S", "Σ"), t("S", "Κ"))
             val full = listOf(t("Mon", "Δευ"), t("Tue", "Τρι"), t("Wed", "Τετ"), t("Thu", "Πεμ"), t("Fri", "Παρ"), t("Sat", "Σαβ"), t("Sun", "Κυρ"))
