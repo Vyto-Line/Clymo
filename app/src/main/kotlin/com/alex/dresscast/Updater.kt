@@ -35,7 +35,7 @@ object Updater {
             val o = JSONObject(con.inputStream.bufferedReader().use { it.readText() })
             val tag = o.getString("tag_name")
             val assets = o.getJSONArray("assets")
-            // The phone app; releases also carry Clymo-Watch.apk for Wear OS.
+            // The phone app (older releases also carried a Wear OS APK).
             val list = (0 until assets.length()).map { assets.getJSONObject(it) }
             val apk = list.firstOrNull { it.getString("name") == "Clymo.apk" }
                 ?: list.firstOrNull { it.getString("name") == "DressCast.apk" }

@@ -178,7 +178,6 @@ class AppState(val ctx: Context) {
         Scheduler.scheduleRain(ctx, fc)
         Scheduler.schedulePlans(ctx)
         Widget.updateAll(ctx, fc)
-        WatchSync.send(ctx, fc, json, prefs)
     }
 
     fun setLanguage(lang: String) {

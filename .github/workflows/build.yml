@@ -28,7 +28,6 @@ jobs:
           name: apks
           path: |
             app/build/outputs/apk/release/*.apk
-            wear/build/outputs/apk/release/*.apk
       # Only commits whose message contains [release] publish a new version.
       - name: Publish release
         if: contains(github.event.head_commit.message, '[release]') || github.event_name == 'workflow_dispatch'
@@ -37,8 +36,7 @@ jobs:
         run: |
           VERSION="2.0.${{ github.run_number }}"
           cp app/build/outputs/apk/release/*.apk Clymo.apk
-          cp wear/build/outputs/apk/release/*.apk Clymo-Watch.apk
-          gh release create "v$VERSION" Clymo.apk Clymo-Watch.apk \
+          gh release create "v$VERSION" Clymo.apk \
             --title "Clymo $VERSION" \
-            --notes "Download **Clymo.apk** below and open it on your phone to install. **Clymo-Watch.apk** is only for Wear OS watches (tiles and a watch-face complication). Do not open it on your phone: it would replace the phone app." \
+            --notes "Download **Clymo.apk** below and open it on your phone to install." \
             --latest
