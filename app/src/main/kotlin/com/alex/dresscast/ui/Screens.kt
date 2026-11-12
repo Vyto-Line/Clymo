@@ -574,13 +574,6 @@ private fun PeriodsCard(day: DayAdvice, f: Fmt, pal: Pal) {
 fun WeekScreen(s: AppState, pal: Pal) {
     val fc = s.forecast
     val f = Fmt(s.prefs.fahrenheit)
-    var openWarning by remember { mutableStateOf<com.alex.dresscast.Warning?>(null) }
-    var planSheet by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<com.alex.dresscast.Plan?>(null) }
-    openWarning?.let { w -> WarningSheet(s.warnings, w, pal) { openWarning = null } }
-    if (planSheet) PlanSheet(s, pal, editing) { planSheet = false; editing = null }
-    var shareSheet by remember { mutableStateOf(false) }
-    if (shareSheet && day != null) ShareSheet(s, pal) { shareSheet = false }
     PullToRefreshBox(isRefreshing = s.pulling, onRefresh = { s.refresh(byUser = true) }, modifier = Modifier.fillMaxSize()) {
         Screen {
             Column {
