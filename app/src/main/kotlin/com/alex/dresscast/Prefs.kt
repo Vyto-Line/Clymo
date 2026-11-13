@@ -117,6 +117,12 @@ class Prefs(context: Context) {
     var tripCache: String by Pref("tripCache", "")
     var tripRemind: Boolean by Pref("tripRemind", true)
     var profiles: String by Pref("profiles", "[]")
+    /** Animated weather picture (always still while battery saver is on). */
+    var motion: Boolean by Pref("motion", true)
+    /** Warnings feed: when last checked, and its ETag/Last-Modified so unchanged feeds aren't downloaded again. */
+    var warnAt: String by Pref("warnAt", "0")
+    var warnTag: String by Pref("warnTag", "")
+    var warnWakeV: Int by Pref("warnWakeV", 0)
     var tipAir: Boolean by Pref("tipAir", true)
     var shareCity: Boolean by Pref("shareCity", true)
     /** The newest version we've already sent a notification about. */

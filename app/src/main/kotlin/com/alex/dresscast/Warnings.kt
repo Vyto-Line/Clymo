@@ -165,8 +165,16 @@ object Warnings {
     fun fetch(ctx: Context, p: Prefs = Prefs(ctx)): List<Warning> {
         if (!p.warnOn) { cacheFile(ctx).delete(); return emptyList() }
         val region = region(ctx, p) ?: run { save(ctx, emptyList()); return emptyList() }
-        val feed = get("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-${region.feed}")
+        val url = "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-${region.feed}"
+        p.warnAt = System.currentTimeMillis().toString()
+        // Unchanged since last time (HTTP 304): keep what we have, nothing to download or parse.
+        val feed = getIfChanged(url, p) ?: return cached(ctx, p)
         val entries = parseFeed(feed).filter { it.emma in region.ids }
+        // Warnings we already have in full don't need their details downloaded again.
+        val known = runCatching {
+            val a = JSONArray(cacheFile(ctx).readText())
+            (0 until a.length()).map { Warning.from(a.getJSONObject(it)) }.associateBy { it.id }
+        }.getOrDefault(emptyMap())
         val now = ZonedDateTime.now()
         val horizon = now.plusHours(48)
         val out = mutableListOf<Warning>()
@@ -174,7 +182,7 @@ object Warnings {
             if (e.expires != null && e.expires.isBefore(now)) continue
             if (e.onset != null && e.onset.isAfter(horizon)) continue
             if (e.level < p.warnLevel) continue          // includes green "Minor" (0) entries
-            val w = runCatching { e.cap?.let { parseCap(get(it), e) } }.getOrNull() ?: e.toWarning() ?: continue
+            val w = known[e.id] ?: runCatching { e.cap?.let { parseCap(get(it), e) } }.getOrNull() ?: e.toWarning() ?: continue
             if (w.level < p.warnLevel || w.level < 1 || w.expires.isBefore(now) || w.onset.isAfter(horizon)) continue
             out += w
         }
@@ -315,6 +323,28 @@ object Warnings {
             area = m["areaDesc"] ?: e.area, sender = (m["senderName"] ?: first["senderName"] ?: "").trim(),
             onset = onset, expires = expires,
         )
+    }
+
+    /** The feed only if it changed since the last check (ETag / Last-Modified), otherwise null. */
+    private fun getIfChanged(url: String, p: Prefs): String? {
+        val con = URL(url).openConnection() as HttpURLConnection
+        con.connectTimeout = 15000
+        con.readTimeout = 20000
+        con.setRequestProperty("User-Agent", "Clymo (Android)")
+        // Remembered per feed, so moving to another country downloads its feed in full.
+        val parts = p.warnTag.split('|').takeIf { it.size == 3 && it[0] == url }
+        val etag = parts?.get(1) ?: ""
+        val modified = parts?.get(2) ?: ""
+        if (etag.isNotBlank()) con.setRequestProperty("If-None-Match", etag)
+        if (modified.isNotBlank()) con.setRequestProperty("If-Modified-Since", modified)
+        try {
+            if (con.responseCode == HttpURLConnection.HTTP_NOT_MODIFIED) return null
+            val body = con.inputStream.bufferedReader().use { it.readText() }
+            p.warnTag = url + "|" + (con.getHeaderField("ETag") ?: "") + "|" + (con.getHeaderField("Last-Modified") ?: "")
+            return body
+        } finally {
+            con.disconnect()
+        }
     }
 
     private fun get(url: String): String {

@@ -50,7 +50,8 @@ private fun refreshInBackground(context: Context, receiver: android.content.Broa
             L.use(p)
             work(p)
             val c = Repo.cached(ctx)
-            val fc = if (c != null && System.currentTimeMillis() - c.fetchedAt < 7_200_000)
+            // The saved forecast has every hour, so "now" stays right without a download for up to 12 hours.
+            val fc = if (c != null && System.currentTimeMillis() - c.fetchedAt < 12 * 3_600_000L)
                 runCatching { Advice.build(c.json, p) }.getOrNull()
             else Repo.load(ctx, p)
             Widget.updateAll(ctx, fc)

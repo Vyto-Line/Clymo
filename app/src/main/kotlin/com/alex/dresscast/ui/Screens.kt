@@ -805,6 +805,11 @@ fun SettingsScreen(s: AppState, pal: Pal) {
         Card(pal) {
             Text(t("Theme", "Θέμα"), color = pal.ink, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
             Segmented(listOf("System" to t("System", "Σύστημα"), "Light" to t("Light", "Φωτεινό"), "Dark" to t("Dark", "Σκούρο")), p.theme, pal) { p.theme = it }
+            Spacer(Modifier.height(14.dp))
+            SettingRow(t("Animated weather picture", "Κινούμενη εικόνα καιρού"),
+                t("Always still while battery saver is on", "Μένει ακίνητη όταν είναι ενεργή η εξοικονόμηση μπαταρίας"), pal) {
+                Switch(p.motion, { p.motion = it })
+            }
             if (android.os.Build.VERSION.SDK_INT >= 31) {
                 Spacer(Modifier.height(14.dp))
                 SettingRow(t("Colours from your wallpaper", "Χρώματα από την ταπετσαρία"), t("Material You · the weather picture keeps its colours", "Material You · η εικόνα του καιρού κρατά τα χρώματά της"), pal) {

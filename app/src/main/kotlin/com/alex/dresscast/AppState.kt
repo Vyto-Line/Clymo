@@ -75,7 +75,12 @@ class AppState(val ctx: Context) {
     }
 
     /** Downloads the official warnings for your area. */
-    fun refreshWarnings() {
+    fun refreshWarnings(force: Boolean = false) {
+        // The feed is checked every few hours in the background anyway; don't re-download on every app open.
+        if (!force && System.currentTimeMillis() - (prefs.warnAt.toLongOrNull() ?: 0L) < 30 * 60_000L) {
+            warnings = Warnings.cached(ctx, prefs)
+            return
+        }
         scope.launch {
             val list = withContext(Dispatchers.IO) { runCatching { Warnings.fetch(ctx, prefs) }.getOrNull() }
             if (list != null) {
@@ -167,6 +172,18 @@ class AppState(val ctx: Context) {
         checkUpdate()
         scope.launch {
             try {
+                // Opening the app again shortly after doesn't need a new download (saves battery and data).
+                if (!byUser) {
+                    val c = withContext(Dispatchers.IO) { Repo.cached(ctx) }
+                    if (c != null && System.currentTimeMillis() - c.fetchedAt < 20 * 60_000L) {
+                        lastJson = c.json
+                        fetchedAt = c.fetchedAt
+                        offlineSince = null
+                        rebuild()
+                        if (warnings.isEmpty()) warnings = Warnings.cached(ctx, prefs)
+                        return@launch
+                    }
+                }
                 val json = withContext(Dispatchers.IO) { Repo.fetchJson(ctx, prefs) }
                 lastJson = json
                 fetchedAt = System.currentTimeMillis()

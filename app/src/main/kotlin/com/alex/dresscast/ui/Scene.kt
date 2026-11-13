@@ -48,24 +48,47 @@ private fun DrawScope.rays(color: Color, center: Offset, inner: Float, outer: Fl
  */
 @Composable
 fun WeatherScene(mood: Mood, c: SceneColors, modifier: Modifier = Modifier, storm: Boolean = false) {
-    val t = rememberInfiniteTransition(label = "scene")
-    val fall by t.animateFloat(0f, 1f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "fall")
-    val drift by t.animateFloat(-6f, 6f, infiniteRepeatable(tween(7000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
-    val glow by t.animateFloat(0.15f, 0.3f, infiniteRepeatable(tween(3000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "glow")
-    val spin by t.animateFloat(0f, 360f, infiniteRepeatable(tween(40000, easing = LinearEasing)), label = "spin")
-    val flash by t.animateFloat(
-        0f, 0f,
-        infiniteRepeatable(keyframes {
-            durationMillis = 5200
-            0f at 0
-            0f at 3600
-            0.85f at 3680
-            0.1f at 3780
-            0.6f at 3860
-            0f at 4100
-        }),
-        label = "flash",
-    )
+    // Battery: the picture stays still when battery saver is on, or when you've turned the animation off.
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val animate = remember { com.alex.dresscast.Prefs(ctx).motion } &&
+        !(ctx.getSystemService(android.os.PowerManager::class.java)?.isPowerSaveMode ?: false)
+    // Values are read inside the drawing below, so only the drawing repeats each frame, not the whole screen.
+    val fallS: androidx.compose.runtime.State<Float>
+    val driftS: androidx.compose.runtime.State<Float>
+    val glowS: androidx.compose.runtime.State<Float>
+    val spinS: androidx.compose.runtime.State<Float>
+    val flashS: androidx.compose.runtime.State<Float>
+    if (animate) {
+        val t = rememberInfiniteTransition(label = "scene")
+        fallS = t.animateFloat(0f, 1f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "fall")
+        driftS = t.animateFloat(-6f, 6f, infiniteRepeatable(tween(7000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
+        glowS = t.animateFloat(0.15f, 0.3f, infiniteRepeatable(tween(3000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "glow")
+        spinS = t.animateFloat(0f, 360f, infiniteRepeatable(tween(40000, easing = LinearEasing)), label = "spin")
+        flashS = t.animateFloat(
+            0f, 0f,
+            infiniteRepeatable(keyframes {
+                durationMillis = 5200
+                0f at 0
+                0f at 3600
+                0.85f at 3680
+                0.1f at 3780
+                0.6f at 3860
+                0f at 4100
+            }),
+            label = "flash",
+        )
+    } else {
+        fallS = remember { androidx.compose.runtime.mutableFloatStateOf(0.35f) }
+        driftS = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+        glowS = remember { androidx.compose.runtime.mutableFloatStateOf(0.22f) }
+        spinS = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+        flashS = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    }
+    val fall by fallS
+    val drift by driftS
+    val glow by glowS
+    val spin by spinS
+    val flash by flashS
 
     val far = remember { PathParser().parsePathString("M0 192 C70 178 140 182 200 172 S300 150 350 158 L350 210 L0 210 Z").toPath() }
     val near = remember { PathParser().parsePathString("M0 202 C90 192 170 200 250 190 S330 182 350 186 L350 210 L0 210 Z").toPath() }

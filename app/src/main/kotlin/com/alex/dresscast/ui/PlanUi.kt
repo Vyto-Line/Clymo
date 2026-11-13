@@ -449,13 +449,13 @@ fun WarningsCard(s: AppState, pal: Pal) {
     val ctx = LocalContext.current
     Card(pal) {
         SettingRow(t("Official warnings", "Επίσημες προειδοποιήσεις"), t("From your national weather service, via MeteoAlarm", "Από την ΕΜΥ μέσω MeteoAlarm"), pal) {
-            Switch(p.warnOn, { p.warnOn = it; com.alex.dresscast.Scheduler.scheduleAll(ctx); s.refreshWarnings() })
+            Switch(p.warnOn, { p.warnOn = it; com.alex.dresscast.Scheduler.scheduleAll(ctx); s.refreshWarnings(force = true) })
         }
         if (p.warnOn) {
             Divider(pal)
             Text(t("Notify me about", "Ειδοποίησέ με για"), color = pal.ink, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
             Segmented(listOf(1 to t("Yellow+", "Κίτρινες+"), 2 to t("Orange+", "Πορτοκαλί+"), 3 to t("Red only", "Μόνο κόκκινες")), p.warnLevel, pal) {
-                p.warnLevel = it; s.refreshWarnings()
+                p.warnLevel = it; p.warnTag = ""; s.refreshWarnings(force = true)
             }
         }
     }

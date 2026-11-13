@@ -20,7 +20,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     Scheduler.scheduleProfiles(ctx)
                     val list = Profiles.load(p)
                     val pr = list.firstOrNull { it.id == id } ?: return@Thread
-                    val json = runCatching { Repo.fetchJson(ctx, p) }.getOrNull() ?: Repo.cached(ctx)?.json ?: return@Thread
+                    val json = Repo.jsonFor(ctx, p, 2 * 3_600_000L) ?: return@Thread
                     val d = Profiles.forecast(json, p, pr).days.firstOrNull() ?: return@Thread
                     Notifier.profile(ctx, pr, d, p.fahrenheit, list.indexOf(pr))
                 } catch (_: Exception) {
@@ -124,6 +124,7 @@ private fun sunReminder(ctx: Context, p: Prefs) {
 /** Downloads warnings and notifies the new ones. */
 private fun warnings(ctx: Context, p: Prefs) {
     if (!p.warnOn) return
+    if (java.time.LocalTime.now().hour !in 6..22) return                 // nobody reads them at night; the morning check catches up
     val list = runCatching { Warnings.fetch(ctx, p) }.getOrNull() ?: return
     Notifier.warnings(ctx, Warnings.fresh(p, list))
 }
@@ -134,7 +135,7 @@ private fun planReminder(ctx: Context, p: Prefs) {
     val item = Calendars.itemsFor(ctx, p, now.toLocalDate()).filter { it.plan?.remind == true }
         .firstOrNull { val m = java.time.Duration.between(now.toLocalTime(), it.start).toMinutes(); m in 0..45 }
     if (item != null) {
-        val json = runCatching { Repo.fetchJson(ctx, p) }.getOrNull() ?: Repo.cached(ctx)?.json
+        val json = Repo.jsonFor(ctx, p, 2 * 3_600_000L)
         val tip = json?.let { runCatching { PlanAdvice.of(item, Hourly(it), p) }.getOrNull() }
         Notifier.plan(ctx, item, tip)
     }

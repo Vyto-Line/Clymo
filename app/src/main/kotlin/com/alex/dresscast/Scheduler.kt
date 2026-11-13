@@ -32,10 +32,16 @@ object Scheduler {
         if (p.evening) schedule(ctx, ACTION_EVENING, 1, nextTime(21, 0))
         else am.cancel(pending(ctx, ACTION_EVENING, 1))
         // Warnings are checked every few hours; Android may batch these to save battery.
+        // RTC (not _WAKEUP): runs the next time the phone is awake anyway, so it never wakes it just for this.
+        val exists = PendingIntent.getBroadcast(ctx, 6, Intent(ctx, AlarmReceiver::class.java).setAction(ACTION_WARN),
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE) != null
         val warn = pending(ctx, ACTION_WARN, 6)
-        if (p.warnOn) am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR,
-            3 * AlarmManager.INTERVAL_HOUR, warn)
-        else am.cancel(warn)
+        if (!p.warnOn) { am.cancel(warn); warn.cancel() }
+        else if (!exists || p.warnWakeV < 1) {
+            am.cancel(warn)
+            am.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR, 3 * AlarmManager.INTERVAL_HOUR, warn)
+            p.warnWakeV = 1
+        }
         schedulePlans(ctx)
         scheduleTrip(ctx)
         scheduleProfiles(ctx)

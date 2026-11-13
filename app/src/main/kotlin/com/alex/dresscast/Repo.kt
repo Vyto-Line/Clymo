@@ -32,21 +32,19 @@ object Repo {
         )
         val json = JSONObject(get(url))
         // Air quality comes from Open-Meteo's companion service; skip it quietly if it fails.
+        // Air quality in one request: the AQI now, plus pollen (in season) and dust when those features are on.
+        val month = java.time.LocalDate.now().monthValue
+        val aqVars = (if (p.pollenOn && month in 1..10) Pollen.TYPES.map { it + "_pollen" } else emptyList()) +
+            (if (p.tipCar) listOf("dust") else emptyList())
         runCatching {
             val aq = JSONObject(get(String.format(Locale.US,
-                "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f&current=european_aqi", p.lat, p.lon)))
+                "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f&current=european_aqi&timezone=auto",
+                p.lat, p.lon) + if (aqVars.isNotEmpty()) "&forecast_days=3&hourly=" + aqVars.joinToString(",") else ""))
             json.put("aqi", aq.getJSONObject("current").getInt("european_aqi"))
+            aq.optJSONObject("hourly")?.let { json.put("pollen", it) }
         }
-        // Air quality extras (Europe, Copernicus via Open-Meteo): pollen for the pollen card, dust for the car-wash tip.
-        val aqVars = (if (p.pollenOn) Pollen.TYPES.map { it + "_pollen" } else emptyList()) + (if (p.tipCar) listOf("dust") else emptyList())
-        if (aqVars.isNotEmpty()) runCatching {
-            val aq = JSONObject(get(String.format(Locale.US,
-                "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f&longitude=%.4f" +
-                    "&hourly=${aqVars.joinToString(",")}&forecast_days=3&timezone=auto", p.lat, p.lon)))
-            json.put("pollen", aq.getJSONObject("hourly"))
-        }
-        // Sea conditions for the beach tip (no data inland).
-        if (p.tipBeach) runCatching {
+        // Sea conditions for the beach tip: only in beach season (May–October).
+        if (p.tipBeach && month in 5..10) runCatching {
             val m = JSONObject(get(String.format(Locale.US,
                 "https://marine-api.open-meteo.com/v1/marine?latitude=%.4f&longitude=%.4f" +
                     "&hourly=sea_surface_temperature&daily=wave_height_max&forecast_days=2&timezone=auto", p.lat, p.lon)))
@@ -63,6 +61,13 @@ object Repo {
         val o = JSONObject(cacheFile(ctx).readText())
         Cached(o.getJSONObject("data"), o.getLong("fetchedAt"))
     }.getOrNull()
+
+    /** The saved forecast if it's newer than [maxAgeMs], otherwise a download (or the saved one when offline). */
+    fun jsonFor(ctx: Context, p: Prefs, maxAgeMs: Long): JSONObject? {
+        val c = cached(ctx)
+        if (c != null && System.currentTimeMillis() - c.fetchedAt < maxAgeMs) return c.json
+        return runCatching { fetchJson(ctx, p) }.getOrNull() ?: c?.json
+    }
 
     /** Fresh forecast if possible, otherwise the saved one. Null only if neither works. */
     fun load(ctx: Context, p: Prefs = Prefs(ctx)): Forecast? {
